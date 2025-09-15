@@ -15,8 +15,7 @@ from datetime import datetime
 from app.models.file import File
 from app.models.scan_session import ScanSession
 from app.core.websocket_manager import websocket_manager
-from app.services.ml_models.text_classifier import TextClassifier
-from app.services.ml_models.image_classifier import ImageClassifier
+from app.services.ml_models.simple_classifier import SimpleClassifier
 from app.services.ml_models.duplicate_detector import DuplicateDetector
 
 
@@ -24,8 +23,7 @@ class ScannerService:
     """Service for scanning directories and classifying files"""
     
     def __init__(self):
-        self.text_classifier = TextClassifier()
-        self.image_classifier = ImageClassifier()
+        self.classifier = SimpleClassifier()
         self.duplicate_detector = DuplicateDetector()
         self.supported_extensions = {
             '.pdf', '.doc', '.docx', '.txt', '.rtf',  # Documents
@@ -147,8 +145,8 @@ class ScannerService:
             md5_hash = await self._calculate_hash(file_path, 'md5')
             sha256_hash = await self._calculate_hash(file_path, 'sha256')
             
-            # Classify file using ML models
-            category = await self._classify_file(file_path, file_type)
+            # Classify file using simple classifier
+            category = await self.classifier.classify_file(file_path)
             
             # Create file record
             file_record = File(
@@ -186,25 +184,7 @@ class ScannerService:
             print(f"Error calculating {algorithm} hash for {file_path}: {e}")
             return ""
     
-    async def _classify_file(self, file_path: str, file_type: str) -> str:
-        """Classify file using ML models"""
-        try:
-            # Determine file category based on MIME type and content
-            if file_type.startswith('image/'):
-                return await self.image_classifier.classify(file_path)
-            elif file_type.startswith('text/') or file_type == 'application/pdf':
-                return await self.text_classifier.classify(file_path)
-            elif file_type.startswith('video/'):
-                return 'video'
-            elif file_type.startswith('audio/'):
-                return 'audio'
-            elif file_type.startswith('application/') and 'code' in file_type:
-                return 'code'
-            else:
-                return 'document'
-        except Exception as e:
-            print(f"Error classifying file {file_path}: {e}")
-            return 'unknown'
+    # This method is now handled by SimpleClassifier
     
     async def _check_duplicates(self, file_data: Dict[str, Any], db: AsyncSession) -> List[Dict]:
         """Check for duplicates of the current file"""
