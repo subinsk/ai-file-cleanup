@@ -1,0 +1,71 @@
+graph TB
+    %% Physical Infrastructure
+    subgraph "Production Server"
+        subgraph "Docker Host"
+            subgraph "Frontend Container"
+                ReactApp[React Application<br/>Port: 3000]
+                NginxFrontend[Nginx<br/>Port: 80/443]
+            end
+            
+            subgraph "Backend Container"
+                FastAPI[FastAPI Application<br/>Port: 8000]
+                MLModels[ML Models<br/>DistilBERT, CNN, EasyOCR]
+            end
+            
+            subgraph "Database Container"
+                PostgreSQL[PostgreSQL Database<br/>Port: 5432]
+                Redis[Redis Cache<br/>Port: 6379]
+            end
+            
+            subgraph "Monitoring Container"
+                Prometheus[Prometheus<br/>Port: 9090]
+                Grafana[Grafana<br/>Port: 3001]
+            end
+        end
+        
+        subgraph "File System"
+            DataVolume[Data Volume<br/>/var/lib/postgresql/data]
+            MLModelVolume[ML Model Volume<br/>/app/ml_models]
+            LogVolume[Log Volume<br/>/app/logs]
+        end
+    end
+
+    %% External Connections
+    subgraph "External Systems"
+        User[User Browser]
+        CDN[CDN/Static Assets]
+        DockerRegistry[Docker Registry]
+    end
+
+    %% Network Connections
+    User -->|HTTPS| NginxFrontend
+    NginxFrontend -->|HTTP| ReactApp
+    NginxFrontend -->|HTTP| FastAPI
+    
+    FastAPI -->|SQL| PostgreSQL
+    FastAPI -->|Redis Protocol| Redis
+    FastAPI -->|File I/O| DataVolume
+    FastAPI -->|Model Access| MLModelVolume
+    
+    MLModels -->|Model Files| MLModelVolume
+    MLModels -->|Logs| LogVolume
+    
+    PostgreSQL -->|Data Files| DataVolume
+    Redis -->|Cache Files| DataVolume
+    
+    Prometheus -->|Metrics| FastAPI
+    Prometheus -->|Metrics| PostgreSQL
+    Prometheus -->|Metrics| Redis
+    Grafana -->|Dashboard| Prometheus
+    
+    DockerRegistry -->|Pull Images| Docker Host
+    CDN -->|Static Assets| User
+
+    %% Container Orchestration
+    subgraph "Docker Compose"
+        ComposeFile[docker-compose.yml]
+        ComposeFile --> FrontendContainer
+        ComposeFile --> BackendContainer
+        ComposeFile --> DatabaseContainer
+        ComposeFile --> MonitoringContainer
+    end

@@ -1,0 +1,310 @@
+classDiagram
+    %% Core Application Classes
+    class FastAPIApp {
+        +app: FastAPI
+        +lifespan()
+        +root()
+        +health_check()
+        +websocket_endpoint()
+    }
+
+    class WebSocketManager {
+        -connections: Dict[str, List[WebSocket]]
+        -session_connections: Dict[str, List[WebSocket]]
+        +connect(websocket, session_id)
+        +disconnect(websocket, session_id)
+        +send_personal_message(message, websocket)
+        +broadcast_scan_progress(session_id, data)
+        +broadcast_cleanup_status(cleanup_id, data)
+        +get_session_connections(session_id)
+        +cleanup_empty_sessions()
+    }
+
+    %% Database Models
+    class File {
+        +id: UUID
+        +path: str
+        +name: str
+        +size: int
+        +file_type: str
+        +category: str
+        +hash_md5: str
+        +hash_sha256: str
+        +perceptual_hash: str
+        +content_hash: str
+        +confidence_score: float
+        +is_duplicate: str
+        +scan_session_id: UUID
+        +created_at: datetime
+        +modified_at: datetime
+        +scanned_at: datetime
+        +to_dict()
+    }
+
+    class Duplicate {
+        +id: UUID
+        +file_id: UUID
+        +duplicate_file_id: UUID
+        +duplicate_group_id: UUID
+        +similarity_score: float
+        +detection_method: str
+        +is_primary: str
+        +created_at: datetime
+        +to_dict()
+    }
+
+    class ScanSession {
+        +id: UUID
+        +directory_path: str
+        +status: str
+        +files_processed: int
+        +files_total: int
+        +duplicates_found: int
+        +errors_count: int
+        +progress_percentage: float
+        +started_at: datetime
+        +completed_at: datetime
+        +error_message: str
+        +update_progress(files_processed, files_total, duplicates_found)
+        +mark_completed()
+        +mark_failed(error_message)
+        +to_dict()
+    }
+
+    %% Service Classes
+    class ScannerService {
+        +classifier: SimpleClassifier
+        +duplicate_detector: DuplicateDetector
+        +supported_extensions: set
+        +scan_directory(session_id, directory_path, db)
+        +_get_files_recursive(directory_path)
+        +_is_supported_file(file_path)
+        +_process_file(file_path, session_id, db)
+        +_get_existing_file(file_path, db)
+        +_calculate_hash(file_path, algorithm)
+        +_detect_all_duplicates(processed_files, db)
+        +_update_session_status(session_id, status, db)
+        +_update_session_progress(session_id, files_processed, files_total, duplicates_found, progress, db)
+        +_update_session_files_total(session_id, total_files, db)
+    }
+
+    class DuplicateService {
+        +similarity_threshold: float
+        +get_duplicate_groups(db, session_id, limit, offset)
+        +get_duplicate_stats(db, session_id)
+        +detect_duplicates_for_file(file_id, db)
+        +_create_duplicate_group(group_id, duplicates, db)
+        +_find_hash_duplicates(file, db)
+        +_find_perceptual_duplicates(file, db)
+        +_find_content_duplicates(file, db)
+        +_file_to_info(file)
+    }
+
+    class CleanupService {
+        +trash_dir: str
+        +archive_dir: str
+        +execute_cleanup(cleanup_id, request, db)
+        +_delete_duplicates(rule, db)
+        +_move_to_trash(rule, db)
+        +_archive_old_files(rule, db)
+        +_organize_by_type(rule, db)
+        +_delete_file(file_id, db)
+        +_ensure_directories()
+    }
+
+    %% ML Model Classes
+    class SimpleClassifier {
+        +categories: dict
+        +classify_file(file_path)
+        +get_file_info(file_path)
+        +_classify_by_mime_type(mime_type)
+    }
+
+    class DuplicateDetector {
+        +find_duplicates(file_paths)
+        +_calculate_file_hash(file_path)
+        +_compare_files(file1, file2)
+    }
+
+    %% API Routes (Unified)
+    class APIRoutes {
+        +scanner_service: ScannerService
+        +duplicate_service: DuplicateService
+        +cleanup_service: CleanupService
+        +start_scan(request, background_tasks, db)
+        +get_scan_status(session_id, db)
+        +get_scan_sessions(limit, offset, db)
+        +get_duplicates(session_id, limit, offset, db)
+        +get_duplicate_stats(session_id, db)
+        +execute_cleanup(request, background_tasks, db)
+        +get_cleanup_status(cleanup_id)
+        +get_scan_history(db)
+        +get_scan_by_id(scan_id, db)
+        +delete_scan(scan_id, db)
+        +delete_multiple_scans(request, db)
+    }
+
+    %% Frontend Components
+    class App {
+        +theme: Theme
+        +Navigation()
+        +Routes()
+    }
+
+    class Dashboard {
+        +scanHistory: array
+        +loading: boolean
+        +error: string
+        +loadScanHistory()
+        +handleScanSelect(scanId)
+    }
+
+    class NewScanPage {
+        +directoryPath: string
+        +scanning: boolean
+        +handleScanStart()
+        +handleDirectorySelect()
+    }
+
+    class ScanDetailPage {
+        +scanId: string
+        +scanData: object
+        +duplicates: array
+        +stats: object
+        +loadScanDetails()
+    }
+
+    class ScanHistoryPanel {
+        +scanHistory: array
+        +onScanSelect: function
+        +onRefresh: function
+        +onScanDeleted: function
+        +onMultipleScansDeleted: function
+        +loading: boolean
+        +deleteDialogOpen: boolean
+        +bulkSelectMode: boolean
+        +selectedScans: Set
+        +handleDeleteClick(scanId, event)
+        +handleDeleteConfirm()
+        +handleBulkDelete()
+        +handleSelectAll()
+        +render()
+    }
+
+    class DuplicatePanel {
+        +duplicates: array
+        +onRefresh: function
+        +render()
+    }
+
+    class CleanupPanel {
+        +onCleanup: function
+        +duplicates: array
+        +loading: boolean
+        +render()
+    }
+
+    class StatsPanel {
+        +stats: object
+        +render()
+    }
+
+    class UMLDiagrams {
+        +value: number
+        +loading: boolean
+        +error: string
+        +exportAnchorEl: HTMLElement
+        +isExporting: boolean
+        +diagrams: array
+        +renderDiagrams()
+        +handleExportAs(format)
+        +handleExportClick()
+    }
+
+    %% Utility Classes
+    class ApiService {
+        +baseURL: string
+        +healthCheck()
+        +startScan(directoryPath)
+        +getScanStatus(sessionId)
+        +getDuplicates(sessionId, limit, offset)
+        +getDuplicateStats(sessionId)
+        +executeCleanup(cleanupRules)
+        +getScanHistory()
+        +getScanById(scanId)
+        +deleteScan(scanId)
+        +deleteMultipleScans(scanIds)
+    }
+
+    class WebSocketHook {
+        +socket: WebSocket
+        +isConnected: boolean
+        +lastMessage: object
+        +connect(sessionId)
+        +disconnect()
+        +sendMessage(message)
+    }
+
+    class WebSocketSingleton {
+        -connections: Map[str, WebSocket]
+        -callbacks: Map[str, Set[function]]
+        -connectionPromises: Map[str, Promise]
+        +getConnection(sessionId, baseUrl)
+        +addCallback(sessionId, callback)
+        +removeCallback(sessionId, callback)
+        +getExistingConnection(sessionId)
+        +closeAll()
+    }
+
+    class ExportUtils {
+        +exportAsImage(element, options)
+        +exportAsPDF(element, options)
+        +getDiagramTitle(diagrams, index)
+        +sanitizeFilename(filename)
+    }
+
+    %% Relationships
+    FastAPIApp --> WebSocketManager
+    FastAPIApp --> APIRoutes
+
+    APIRoutes --> ScannerService
+    APIRoutes --> DuplicateService
+    APIRoutes --> CleanupService
+
+    ScannerService --> File
+    ScannerService --> ScanSession
+    ScannerService --> SimpleClassifier
+    ScannerService --> DuplicateDetector
+
+    DuplicateService --> File
+    DuplicateService --> Duplicate
+
+    CleanupService --> File
+    CleanupService --> Duplicate
+
+    SimpleClassifier --> File
+    DuplicateDetector --> File
+
+    App --> Dashboard
+    App --> NewScanPage
+    App --> ScanDetailPage
+    App --> UMLDiagrams
+
+    Dashboard --> ScanHistoryPanel
+    ScanDetailPage --> DuplicatePanel
+    ScanDetailPage --> CleanupPanel
+    ScanDetailPage --> StatsPanel
+
+    NewScanPage --> ApiService
+    ScanDetailPage --> ApiService
+    Dashboard --> ApiService
+
+    NewScanPage --> WebSocketHook
+    ScanDetailPage --> WebSocketHook
+
+    WebSocketHook --> WebSocketSingleton
+    UMLDiagrams --> ExportUtils
+
+    %% Database Relationships
+    File --> ScanSession
+    Duplicate --> File

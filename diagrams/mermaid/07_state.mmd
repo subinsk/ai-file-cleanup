@@ -1,0 +1,58 @@
+stateDiagram-v2
+    [*] --> Idle
+    
+    Idle --> Scanning : Start Scan
+    Scanning --> Processing : Files Found
+    Processing --> Classifying : File Processed
+    Classifying --> Detecting : Classification Complete
+    Detecting --> Completed : Duplicates Found
+    Detecting --> Failed : Detection Error
+    Completed --> Idle : Scan Complete
+    Failed --> Idle : Error Handled
+    
+    Scanning --> Cancelled : User Cancel
+    Processing --> Cancelled : User Cancel
+    Classifying --> Cancelled : User Cancel
+    Detecting --> Cancelled : User Cancel
+    Cancelled --> Idle : Cleanup Complete
+    
+    Completed --> CleanupPreview : User Selects Cleanup
+    CleanupPreview --> CleanupExecuting : User Confirms
+    CleanupPreview --> Completed : User Cancels
+    CleanupExecuting --> CleanupCompleted : Cleanup Success
+    CleanupExecuting --> CleanupFailed : Cleanup Error
+    CleanupCompleted --> Idle : Process Complete
+    CleanupFailed --> Completed : Error Handled
+    
+    %% Sub-states for Processing
+    state Processing {
+        [*] --> ReadingFile
+        ReadingFile --> CalculatingHash : File Read
+        CalculatingHash --> ExtractingMetadata : Hash Calculated
+        ExtractingMetadata --> StoringData : Metadata Extracted
+        StoringData --> [*] : Data Stored
+    }
+    
+    %% Sub-states for Classifying
+    state Classifying {
+        [*] --> TextAnalysis
+        TextAnalysis --> ImageAnalysis : Text Processed
+        ImageAnalysis --> OCRProcessing : Image Processed
+        OCRProcessing --> [*] : OCR Complete
+    }
+    
+    %% Sub-states for Detecting
+    state Detecting {
+        [*] --> HashComparison
+        HashComparison --> SimilarityCalculation : Hashes Compared
+        SimilarityCalculation --> GroupCreation : Similarity Calculated
+        GroupCreation --> [*] : Groups Created
+    }
+    
+    %% Sub-states for Cleanup
+    state CleanupExecuting {
+        [*] --> BackupCreation
+        BackupCreation --> FileDeletion : Backup Complete
+        FileDeletion --> DatabaseUpdate : Files Deleted
+        DatabaseUpdate --> [*] : Database Updated
+    }

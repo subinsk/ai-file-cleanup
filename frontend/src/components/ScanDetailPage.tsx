@@ -106,7 +106,8 @@ const ScanDetailPage: React.FC = () => {
     return () => {
       disconnectWebSocket();
     };
-  }, [scanId, connectWebSocket, disconnectWebSocket]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scanId]); // Intentionally excluding connectWebSocket and disconnectWebSocket to prevent infinite re-connections
 
   // Handle WebSocket messages for real-time updates
   useEffect(() => {

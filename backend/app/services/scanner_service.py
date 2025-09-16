@@ -129,10 +129,45 @@ class ScannerService:
             
             # Now detect duplicates (second phase)
             print(f"🔍 Starting duplicate detection for {len(processed_files)} processed files")
+            
+            # Update progress to 50% (file processing complete, starting duplicate detection)
+            await self._update_session_progress(
+                session_id, processed_count, total_files, 0, 50.0, db
+            )
+            
+            # Send progress update for duplicate detection phase
+            await websocket_manager.broadcast_scan_progress(
+                session_id, {
+                    "status": "running",
+                    "progress": 50.0,
+                    "files_processed": processed_count,
+                    "files_total": total_files,
+                    "duplicates_found": 0,
+                    "phase": "detecting_duplicates"
+                }
+            )
+            
             duplicates_found = 0
             if processed_files:
                 duplicates_found = await self._detect_all_duplicates(processed_files, db)
                 print(f"🔍 Found {duplicates_found} duplicate groups")
+                
+                # Update progress to 75% (duplicate detection complete)
+                await self._update_session_progress(
+                    session_id, processed_count, total_files, duplicates_found, 75.0, db
+                )
+                
+                # Send progress update after duplicate detection
+                await websocket_manager.broadcast_scan_progress(
+                    session_id, {
+                        "status": "running",
+                        "progress": 75.0,
+                        "files_processed": processed_count,
+                        "files_total": total_files,
+                        "duplicates_found": duplicates_found,
+                        "phase": "finalizing"
+                    }
+                )
             else:
                 print("⚠️ No processed files to check for duplicates")
             
@@ -275,11 +310,28 @@ class ScannerService:
             except Exception as db_error:
                 # Handle constraint violation gracefully
                 if "duplicate key value violates unique constraint" in str(db_error):
-                    print(f"⚠️ File already exists, skipping: {file_path}")
-                    # Try to get the existing file again
+                    print(f"📄 File already exists in database: {file_path}")
+                    # Try to get the existing file and update its scan_session_id
                     existing_file = await self._get_existing_file(file_path, db)
                     if existing_file:
-                        return existing_file.to_dict()
+                        # Update the existing file to associate it with current scan session
+                        try:
+                            from sqlalchemy import update
+                            stmt = update(File).where(File.id == existing_file.id).values(
+                                scan_session_id=session_id,
+                                scanned_at=datetime.now()
+                            )
+                            await db.execute(stmt)
+                            await db.flush()
+                            
+                            # Refresh the file to get updated data
+                            await db.refresh(existing_file)
+                            print(f"✅ Updated existing file for current scan session: {file_path}")
+                            return existing_file.to_dict()
+                        except Exception as update_error:
+                            print(f"❌ Error updating existing file: {update_error}")
+                            # Fall back to returning the existing file data
+                            return existing_file.to_dict()
                     else:
                         # If we can't get the existing file, return a basic dict
                         return {

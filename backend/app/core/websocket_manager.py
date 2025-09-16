@@ -22,20 +22,29 @@ class WebSocketManager:
         if session_id not in self.active_connections:
             self.active_connections[session_id] = []
         
-        self.active_connections[session_id].append(websocket)
-        print(f"✅ WebSocket connected for session: {session_id}")
+        # Check if this websocket is already in the list (shouldn't happen, but just in case)
+        if websocket not in self.active_connections[session_id]:
+            self.active_connections[session_id].append(websocket)
+            print(f"✅ WebSocket connected for session: {session_id} (Total connections: {len(self.active_connections[session_id])})")
+        else:
+            print(f"⚠️ WebSocket already connected for session: {session_id}")
     
     def disconnect(self, websocket: WebSocket, session_id: str):
         """Remove a WebSocket connection"""
         if session_id in self.active_connections:
             if websocket in self.active_connections[session_id]:
                 self.active_connections[session_id].remove(websocket)
+                remaining_connections = len(self.active_connections[session_id])
+                print(f"❌ WebSocket disconnected for session: {session_id} (Remaining connections: {remaining_connections})")
+            else:
+                print(f"⚠️ WebSocket not found in session: {session_id}")
             
             # Clean up empty session
             if not self.active_connections[session_id]:
                 del self.active_connections[session_id]
-        
-        print(f"❌ WebSocket disconnected for session: {session_id}")
+                print(f"🧹 Cleaned up empty session: {session_id}")
+        else:
+            print(f"⚠️ Session not found for disconnect: {session_id}")
     
     async def send_personal_message(self, message: str, websocket: WebSocket):
         """Send message to a specific WebSocket connection"""
@@ -57,9 +66,18 @@ class WebSocketManager:
                     print(f"Error sending to session {session_id}: {e}")
                     disconnected.append(websocket)
             
-            # Remove disconnected websockets
+            # Remove disconnected websockets safely
             for ws in disconnected:
-                self.active_connections[session_id].remove(ws)
+                try:
+                    if ws in self.active_connections[session_id]:
+                        self.active_connections[session_id].remove(ws)
+                except (ValueError, KeyError) as e:
+                    print(f"Error removing disconnected websocket: {e}")
+            
+            # Clean up empty session
+            if not self.active_connections[session_id]:
+                del self.active_connections[session_id]
+                print(f"🧹 Cleaned up empty session: {session_id}")
     
     async def broadcast_scan_progress(self, session_id: str, progress: dict):
         """Broadcast scan progress to session"""

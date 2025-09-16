@@ -54,7 +54,15 @@ const StatsPanel: React.FC<StatsPanelProps> = ({ stats }) => {
     return 'low';
   };
 
-  if (!stats) {
+  // Check if stats is null/undefined OR if it's an empty stats object (all zeros)
+  const hasValidStats = stats && (
+    stats.total_duplicate_groups > 0 || 
+    stats.total_duplicate_files > 0 || 
+    stats.total_space_wasted > 0 ||
+    stats.most_common_type
+  );
+  
+  if (!hasValidStats) {
     return (
       <Card 
         elevation={0}

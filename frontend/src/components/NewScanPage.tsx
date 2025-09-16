@@ -10,12 +10,24 @@ import {
   Alert,
   CircularProgress,
   Avatar,
-  Fade
+  Fade,
+  Container,
+  InputAdornment,
+  Tooltip,
+  Paper,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText
 } from '@mui/material';
 import {
   FolderOpen,
   PlayArrow,
-  ArrowBack
+  ArrowBack,
+  Info,
+  Computer,
+  Folder,
+  InsertDriveFile
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/apiService';
@@ -24,7 +36,18 @@ const NewScanPage: React.FC = () => {
   const [directoryPath, setDirectoryPath] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const navigate = useNavigate();
+
+  // Common directory suggestions
+  const commonDirectories = [
+    { path: 'C:\\Users\\Documents', label: 'Documents', icon: <Folder /> },
+    { path: 'C:\\Users\\Downloads', label: 'Downloads', icon: <Folder /> },
+    { path: 'C:\\Users\\Desktop', label: 'Desktop', icon: <Computer /> },
+    { path: 'C:\\Users\\Pictures', label: 'Pictures', icon: <Folder /> },
+    { path: 'C:\\Users\\Videos', label: 'Videos', icon: <Folder /> },
+    { path: 'D:\\', label: 'D: Drive', icon: <Computer /> },
+  ];
 
   const handleStartScan = async () => {
     if (!directoryPath.trim()) {
@@ -53,48 +76,61 @@ const NewScanPage: React.FC = () => {
   };
 
   const handleBrowseDirectory = () => {
-    // This would open a directory picker in a real app
-    // For now, we'll just show an alert
-    alert('Directory picker would open here. Please enter the path manually.');
+    setShowSuggestions(!showSuggestions);
+  };
+
+  const handleSelectDirectory = (path: string) => {
+    setDirectoryPath(path);
+    setShowSuggestions(false);
+    setError(null);
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'grey.50', p: 3 }}>
-      <Grid container justifyContent="center">
-        <Grid item xs={12} md={8} lg={6}>
-          <Fade in={true} timeout={500}>
-            <Card 
-              elevation={0}
-              sx={{ 
-                border: '1px solid rgba(0, 0, 0, 0.05)',
-                background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+    <Container maxWidth="md" sx={{ minHeight: '100vh', py: 4 }}>
+      <Fade in={true} timeout={500}>
+        <Box>
+          {/* Header */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
+            <Button
+              startIcon={<ArrowBack />}
+              onClick={() => navigate('/')}
+              variant="outlined"
+              size="small"
+            >
+              Back to Dashboard
+            </Button>
+            <Box sx={{ flexGrow: 1 }} />
+            <Avatar
+              sx={{
+                bgcolor: 'primary.main',
+                color: 'white',
+                width: 48,
+                height: 48
               }}
             >
-              <CardContent sx={{ p: 4 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
-                  <Button
-                    startIcon={<ArrowBack />}
-                    onClick={() => navigate('/dashboard')}
-                    sx={{ minWidth: 'auto', p: 1 }}
-                  >
-                    Back
-                  </Button>
-                  <Avatar
-                    sx={{
-                      bgcolor: 'primary.light',
-                      color: 'primary.contrastText',
-                    }}
-                  >
-                    <FolderOpen />
-                  </Avatar>
-                  <Box>
-                    <Typography variant="h5" sx={{ fontWeight: 600 }}>
-                      Start New Scan
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Scan a directory for duplicate files
-                    </Typography>
-                  </Box>
+              <FolderOpen />
+            </Avatar>
+          </Box>
+
+          {/* Main Card */}
+          <Card 
+            elevation={0}
+            sx={{ 
+              border: '1px solid rgba(0, 0, 0, 0.08)',
+              borderRadius: 3,
+              background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+              overflow: 'visible'
+            }}
+          >
+            <CardContent sx={{ p: 4 }}>
+                {/* Title Section */}
+                <Box sx={{ mb: 4 }}>
+                  <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
+                    Start New Scan
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary">
+                    Scan a directory to detect duplicate files and free up space
+                  </Typography>
                 </Box>
 
                 {error && (
@@ -103,80 +139,164 @@ const NewScanPage: React.FC = () => {
                   </Alert>
                 )}
 
+                {/* Directory Input Section */}
                 <Box sx={{ mb: 4 }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
-                    Directory Path
+                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+                    Select Directory to Scan
                   </Typography>
                   <TextField
                     fullWidth
                     placeholder="Enter directory path (e.g., C:\Users\Documents)"
                     value={directoryPath}
-                    onChange={(e) => setDirectoryPath(e.target.value)}
+                    onChange={(e) => {
+                      setDirectoryPath(e.target.value);
+                      setError(null);
+                    }}
                     disabled={loading}
                     InputProps={{
                       startAdornment: (
-                        <Box sx={{ display: 'flex', alignItems: 'center', mr: 1 }}>
+                        <InputAdornment position="start">
                           <FolderOpen color="action" />
-                        </Box>
+                        </InputAdornment>
                       ),
                     }}
-                    sx={{ mb: 2 }}
+                    sx={{ 
+                      mb: 2,
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                      }
+                    }}
                   />
-                  <Button
-                    variant="outlined"
-                    onClick={handleBrowseDirectory}
-                    disabled={loading}
-                    size="small"
-                  >
-                    Browse Directory
-                  </Button>
-                </Box>
-
-                <Box sx={{ mb: 4 }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
-                    What will be scanned?
-                  </Typography>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                    <Typography variant="body2" color="text.secondary">
-                      • Text files (.txt, .md, .py, .js, .html, etc.)
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      • Image files (.jpg, .png, .gif, .bmp, etc.)
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      • Document files (.pdf, .doc, .docx, etc.)
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      • Archive files (.zip, .rar, .7z, etc.)
-                    </Typography>
+                  <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+                    <Button
+                      variant="outlined"
+                      startIcon={<FolderOpen />}
+                      onClick={handleBrowseDirectory}
+                      disabled={loading}
+                      size="small"
+                    >
+                      {showSuggestions ? 'Hide Suggestions' : 'Browse Common Folders'}
+                    </Button>
+                    <Tooltip title="We'll scan all supported file types in the selected directory">
+                      <Button
+                        variant="text"
+                        startIcon={<Info />}
+                        size="small"
+                        disabled
+                      >
+                        Info
+                      </Button>
+                    </Tooltip>
                   </Box>
+
+                  {/* Directory Suggestions */}
+                  {showSuggestions && (
+                    <Fade in={showSuggestions}>
+                      <Paper 
+                        elevation={1} 
+                        sx={{ 
+                          border: '1px solid rgba(0, 0, 0, 0.08)',
+                          borderRadius: 2,
+                          overflow: 'hidden'
+                        }}
+                      >
+                        <List dense>
+                          {commonDirectories.map((dir, index) => (
+                            <ListItem
+                              key={index}
+                              button
+                              onClick={() => handleSelectDirectory(dir.path)}
+                              sx={{
+                                '&:hover': {
+                                  bgcolor: 'primary.light',
+                                  color: 'primary.contrastText',
+                                }
+                              }}
+                            >
+                              <ListItemIcon sx={{ minWidth: 36 }}>
+                                {dir.icon}
+                              </ListItemIcon>
+                              <ListItemText 
+                                primary={dir.label}
+                                secondary={dir.path}
+                              />
+                            </ListItem>
+                          ))}
+                        </List>
+                      </Paper>
+                    </Fade>
+                  )}
                 </Box>
 
-                <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                {/* File Types Info */}
+                <Paper 
+                  elevation={0} 
+                  sx={{ 
+                    p: 3, 
+                    mb: 4, 
+                    bgcolor: 'primary.light', 
+                    color: 'primary.contrastText',
+                    borderRadius: 2 
+                  }}
+                >
+                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <InsertDriveFile />
+                    Supported File Types
+                  </Typography>
+                  <Grid container spacing={2}>
+                    <Grid item xs={6} sm={3}>
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>Documents</Typography>
+                      <Typography variant="caption">PDF, DOC, TXT</Typography>
+                    </Grid>
+                    <Grid item xs={6} sm={3}>
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>Images</Typography>
+                      <Typography variant="caption">JPG, PNG, GIF</Typography>
+                    </Grid>
+                    <Grid item xs={6} sm={3}>
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>Code Files</Typography>
+                      <Typography variant="caption">PY, JS, HTML</Typography>
+                    </Grid>
+                    <Grid item xs={6} sm={3}>
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>Archives</Typography>
+                      <Typography variant="caption">ZIP, RAR, 7Z</Typography>
+                    </Grid>
+                  </Grid>
+                </Paper>
+
+                {/* Action Buttons */}
+                <Box sx={{ display: 'flex', gap: 2, justifyContent: 'space-between', pt: 2 }}>
                   <Button
                     variant="outlined"
-                    onClick={() => navigate('/dashboard')}
+                    onClick={() => navigate('/')}
                     disabled={loading}
+                    size="large"
+                    sx={{ minWidth: 120 }}
                   >
                     Cancel
                   </Button>
                   <Button
                     variant="contained"
-                    startIcon={loading ? <CircularProgress size={20} /> : <PlayArrow />}
+                    startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <PlayArrow />}
                     onClick={handleStartScan}
                     disabled={loading || !directoryPath.trim()}
                     size="large"
+                    sx={{ 
+                      minWidth: 160,
+                      py: 1.5,
+                      px: 3,
+                      fontWeight: 600,
+                      fontSize: '1.1rem'
+                    }}
                   >
                     {loading ? 'Starting Scan...' : 'Start Scan'}
                   </Button>
                 </Box>
               </CardContent>
             </Card>
-          </Fade>
-        </Grid>
-      </Grid>
-    </Box>
-  );
+          </Box>
+        </Fade>
+      </Container>
+    );
 };
 
 export default NewScanPage;

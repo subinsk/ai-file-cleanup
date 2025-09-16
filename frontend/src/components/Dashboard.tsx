@@ -5,12 +5,16 @@ import {
   Container,
   Alert,
   Snackbar,
-  Fade
+  Fade,
+  Button,
+  Grid
 } from '@mui/material';
 import {
   CheckCircle,
   Error,
-  Info
+  Info,
+  Add,
+  PlayArrow
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import ScanHistoryPanel from './ScanHistoryPanel';
@@ -44,6 +48,16 @@ const Dashboard: React.FC = () => {
     navigate(`/scan/${scanId}`);
   };
 
+  const handleScanDeleted = (scanId: string) => {
+    // Remove the deleted scan from the local state
+    setScanHistory(prev => prev.filter(scan => scan.id !== scanId));
+  };
+
+  const handleMultipleScansDeleted = (scanIds: string[]) => {
+    // Remove the deleted scans from the local state
+    setScanHistory(prev => prev.filter(scan => !scanIds.includes(scan.id)));
+  };
+
   const handleSnackbarClose = () => {
     setSnackbarOpen(false);
   };
@@ -53,13 +67,38 @@ const Dashboard: React.FC = () => {
       <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
         {/* Header */}
         <Box sx={{ mb: 4 }}>
-          <Typography variant="h3" sx={{ fontWeight: 700, mb: 2, color: 'primary.main' }}>
-            AI File Cleanup
-          </Typography>
-          <Typography variant="h6" color="text.secondary" sx={{ maxWidth: 600 }}>
-            Manage your file duplicates with intelligent scanning and cleanup tools. 
-            View your scan history and start new scans to organize your files.
-          </Typography>
+          <Grid container alignItems="center" justifyContent="space-between">
+            <Grid item xs={12} md={8}>
+              <Typography variant="h3" sx={{ fontWeight: 700, mb: 2, color: 'primary.main' }}>
+                AI File Cleanup
+              </Typography>
+              <Typography variant="h6" color="text.secondary" sx={{ maxWidth: 600 }}>
+                Manage your file duplicates with intelligent scanning and cleanup tools. 
+                View your scan history and start new scans to organize your files.
+              </Typography>
+            </Grid>
+            <Grid item xs={12} md={4} sx={{ display: 'flex', justifyContent: { xs: 'flex-start', md: 'flex-end' }, mt: { xs: 2, md: 0 } }}>
+              <Button
+                variant="contained"
+                size="large"
+                startIcon={<PlayArrow />}
+                onClick={() => navigate('/scan/new')}
+                sx={{
+                  py: 1.5,
+                  px: 3,
+                  fontSize: '1.1rem',
+                  fontWeight: 600,
+                  borderRadius: 2,
+                  boxShadow: 2,
+                  '&:hover': {
+                    boxShadow: 4,
+                  }
+                }}
+              >
+                Start New Scan
+              </Button>
+            </Grid>
+          </Grid>
         </Box>
 
         {error && (
@@ -81,6 +120,8 @@ const Dashboard: React.FC = () => {
           onScanSelect={handleScanSelect}
           onRefresh={loadScanHistory}
           loading={loading}
+          onScanDeleted={handleScanDeleted}
+          onMultipleScansDeleted={handleMultipleScansDeleted}
         />
       </Container>
 

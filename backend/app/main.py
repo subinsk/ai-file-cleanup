@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import uvicorn
 import os
+import json
 from contextlib import asynccontextmanager
 
 from app.core.config import settings
@@ -70,14 +71,66 @@ async def health_check():
 @app.websocket("/ws/{session_id}")
 async def websocket_endpoint(websocket: WebSocket, session_id: str):
     """WebSocket endpoint for real-time updates"""
-    await websocket_manager.connect(websocket, session_id)
     try:
+        await websocket_manager.connect(websocket, session_id)
+        
+        # Send initial connection confirmation
+        await websocket_manager.send_personal_message(
+            json.dumps({
+                "type": "connection_confirmed",
+                "session_id": session_id,
+                "data": {"message": "WebSocket connected successfully"}
+            }), 
+            websocket
+        )
+        
         while True:
-            # Keep connection alive and handle incoming messages
-            data = await websocket.receive_text()
-            # Echo back for now - will be replaced with actual message handling
-            await websocket_manager.send_personal_message(f"Echo: {data}", websocket)
+            try:
+                # Keep connection alive and handle incoming messages
+                data = await websocket.receive_text()
+                
+                # Try to parse incoming message
+                try:
+                    message = json.loads(data)
+                    message_type = message.get('type', 'unknown')
+                    
+                    if message_type == 'ping':
+                        # Respond to ping with pong
+                        await websocket_manager.send_personal_message(
+                            json.dumps({
+                                "type": "pong",
+                                "session_id": session_id,
+                                "data": {"timestamp": message.get('timestamp')}
+                            }), 
+                            websocket
+                        )
+                    else:
+                        # Echo back other messages for now
+                        await websocket_manager.send_personal_message(f"Echo: {data}", websocket)
+                        
+                except json.JSONDecodeError:
+                    # Handle non-JSON messages
+                    await websocket_manager.send_personal_message(f"Echo: {data}", websocket)
+                    
+            except WebSocketDisconnect:
+                # Handle WebSocket disconnect gracefully
+                print(f"WebSocket disconnected during message processing for session: {session_id}")
+                break
+            except Exception as e:
+                # Log the error but don't break the connection for minor issues
+                error_str = str(e)
+                if "1001" in error_str:
+                    print(f"Client disconnected (page reload/close) for session {session_id}")
+                    break
+                else:
+                    print(f"Error processing WebSocket message for session {session_id}: {e}")
+                    # Don't break for other errors, continue processing
+                
     except WebSocketDisconnect:
+        print(f"WebSocket disconnected normally for session: {session_id}")
+    except Exception as e:
+        print(f"Unexpected error in WebSocket for session {session_id}: {e}")
+    finally:
         websocket_manager.disconnect(websocket, session_id)
 
 

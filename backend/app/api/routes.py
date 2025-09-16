@@ -17,6 +17,7 @@ from app.services.cleanup_service import CleanupService
 from app.schemas.scan import ScanRequest, ScanResponse, ScanStatus
 from app.schemas.duplicate import DuplicateResponse, DuplicateGroup
 from app.schemas.cleanup import CleanupRequest, CleanupResponse
+from pydantic import BaseModel
 
 # Create router
 api_router = APIRouter()
@@ -25,6 +26,11 @@ api_router = APIRouter()
 scanner_service = ScannerService()
 duplicate_service = DuplicateService()
 cleanup_service = CleanupService()
+
+
+# Request models
+class BulkDeleteRequest(BaseModel):
+    scan_ids: List[str]
 
 
 async def run_scan_task(session_id: str, directory_path: str):
@@ -283,6 +289,93 @@ async def get_scan_history(
         raise HTTPException(status_code=500, detail=f"Failed to get scan history: {str(e)}")
 
 
+@api_router.delete("/scans/bulk")
+async def delete_multiple_scans(
+    request: BulkDeleteRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """Delete multiple scan sessions and all their related data"""
+    try:
+        from sqlalchemy import select, delete
+        import uuid
+        
+        scan_ids = request.scan_ids
+        print(f"🗑️ delete_multiple_scans called with scan_ids: {scan_ids}")
+        
+        if not scan_ids:
+            raise HTTPException(status_code=400, detail="No scan IDs provided")
+        
+        # Convert strings to UUIDs and validate
+        session_uuids = []
+        for scan_id in scan_ids:
+            try:
+                session_uuid = uuid.UUID(scan_id)
+                session_uuids.append(session_uuid)
+            except ValueError as e:
+                print(f"❌ Invalid UUID format: {scan_id}, error: {e}")
+                raise HTTPException(status_code=400, detail=f"Invalid scan ID format: {scan_id}")
+        
+        print(f"✅ Successfully converted {len(session_uuids)} UUIDs")
+        
+        # Check which sessions exist
+        query = select(ScanSession).where(ScanSession.id.in_(session_uuids))
+        result = await db.execute(query)
+        existing_sessions = result.scalars().all()
+        
+        if len(existing_sessions) != len(session_uuids):
+            existing_ids = [str(s.id) for s in existing_sessions]
+            missing_ids = [scan_id for scan_id in scan_ids if scan_id not in existing_ids]
+            print(f"❌ Some scan sessions not found: {missing_ids}")
+            raise HTTPException(status_code=404, detail=f"Scan sessions not found: {missing_ids}")
+        
+        print(f"✅ Found {len(existing_sessions)} scan sessions to delete")
+        
+        deleted_count = 0
+        for session_uuid in session_uuids:
+            try:
+                # Delete related data first (due to foreign key constraints)
+                # Delete duplicates related to this session
+                duplicates_delete = delete(Duplicate).where(
+                    Duplicate.duplicate_file_id.in_(
+                        select(File.id).where(File.scan_session_id == session_uuid)
+                    )
+                )
+                await db.execute(duplicates_delete)
+                
+                # Delete files related to this session
+                files_delete = delete(File).where(File.scan_session_id == session_uuid)
+                await db.execute(files_delete)
+                
+                # Delete the scan session itself
+                session_delete = delete(ScanSession).where(ScanSession.id == session_uuid)
+                await db.execute(session_delete)
+                
+                deleted_count += 1
+                print(f"✅ Deleted scan session: {session_uuid}")
+                
+            except Exception as e:
+                print(f"❌ Error deleting session {session_uuid}: {e}")
+                # Continue with other deletions rather than failing completely
+                continue
+        
+        await db.commit()
+        print(f"✅ Successfully deleted {deleted_count} scan sessions")
+        
+        return {
+            "message": f"Successfully deleted {deleted_count} scan sessions",
+            "deleted_count": deleted_count,
+            "requested_count": len(scan_ids)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error deleting multiple scans: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to delete scans: {str(e)}")
+
+
 @api_router.get("/scans/{scan_id}")
 async def get_scan_by_id(
     scan_id: str,
@@ -333,10 +426,78 @@ async def get_scan_by_id(
                 "error_message": session.error_message
             },
             "duplicates": duplicates,
-            "stats": stats
+            "stats": stats.model_dump() if hasattr(stats, 'model_dump') else stats
         }
         
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get scan details: {str(e)}")
+
+
+@api_router.delete("/scans/{scan_id}")
+async def delete_scan(
+    scan_id: str,
+    db: AsyncSession = Depends(get_db)
+):
+    """Delete a specific scan session and all its related data"""
+    try:
+        from sqlalchemy import select, delete
+        import uuid
+        
+        print(f"🗑️ delete_scan called with scan_id: {scan_id}")
+        
+        # Convert string to UUID
+        try:
+            session_uuid = uuid.UUID(scan_id)
+            print(f"✅ Successfully converted to UUID: {session_uuid}")
+        except ValueError as e:
+            print(f"❌ Invalid UUID format: {scan_id}, error: {e}")
+            raise HTTPException(status_code=400, detail="Invalid scan ID format")
+        
+        # Check if scan session exists
+        query = select(ScanSession).where(ScanSession.id == session_uuid)
+        result = await db.execute(query)
+        session = result.scalar_one_or_none()
+        
+        if not session:
+            print(f"❌ Scan session not found: {session_uuid}")
+            raise HTTPException(status_code=404, detail="Scan session not found")
+        
+        print(f"✅ Found scan session to delete: {session.id}")
+        
+        # Delete related data first (due to foreign key constraints)
+        # Delete duplicates related to this session
+        duplicates_delete = delete(Duplicate).where(
+            Duplicate.duplicate_file_id.in_(
+                select(File.id).where(File.scan_session_id == session_uuid)
+            )
+        )
+        await db.execute(duplicates_delete)
+        print(f"✅ Deleted duplicates for session: {session_uuid}")
+        
+        # Delete files related to this session
+        files_delete = delete(File).where(File.scan_session_id == session_uuid)
+        await db.execute(files_delete)
+        print(f"✅ Deleted files for session: {session_uuid}")
+        
+        # Delete the scan session itself
+        session_delete = delete(ScanSession).where(ScanSession.id == session_uuid)
+        await db.execute(session_delete)
+        print(f"✅ Deleted scan session: {session_uuid}")
+        
+        await db.commit()
+        print(f"✅ Successfully deleted scan session and all related data: {session_uuid}")
+        
+        return {
+            "message": "Scan session deleted successfully",
+            "scan_id": scan_id
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error deleting scan: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to delete scan: {str(e)}")

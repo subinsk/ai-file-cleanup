@@ -129,6 +129,23 @@ export const apiService = {
     const response = await api.get(`/api/scans/${scanId}`);
     console.log('✅ API response:', response.data);
     return response.data;
+  },
+
+  // Delete operations
+  async deleteScan(scanId: string) {
+    const response = await api.delete(`/api/scans/${scanId}`);
+    return response.data;
+  },
+
+  async deleteMultipleScans(scanIds: string[]) {
+    const response = await api.request({
+      method: 'DELETE',
+      url: '/api/scans/bulk',
+      data: {
+        scan_ids: scanIds
+      }
+    });
+    return response.data;
   }
 };
 
