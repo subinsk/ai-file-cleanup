@@ -28,7 +28,7 @@ graph TB
             end
         end
         
-        subgraph "File System"
+        subgraph "Volumes"
             DataVolume[Data Volume<br/>/var/lib/postgresql/data]
             MLModelVolume[ML Model Volume<br/>/app/ml_models]
             LogVolume[Log Volume<br/>/app/logs]
@@ -44,35 +44,36 @@ graph TB
 
     %% Network Connections
     User -->|HTTPS| NginxFrontend
-    NginxFrontend -->|HTTP| ReactApp
-    NginxFrontend -->|HTTP| FastAPI
+    NginxFrontend --> ReactApp
+    NginxFrontend --> FastAPI
     
-    FastAPI -->|SQL| PostgreSQL
-    FastAPI -->|Redis Protocol| Redis
-    FastAPI -->|File I/O| DataVolume
-    FastAPI -->|Model Access| MLModelVolume
+    FastAPI --> PostgreSQL
+    FastAPI --> Redis
+    FastAPI --> DataVolume
+    FastAPI --> MLModelVolume
     
-    MLModels -->|Model Files| MLModelVolume
-    MLModels -->|Logs| LogVolume
+    MLModels --> MLModelVolume
+    MLModels --> LogVolume
     
-    PostgreSQL -->|Data Files| DataVolume
-    Redis -->|Cache Files| DataVolume
+    PostgreSQL --> DataVolume
+    Redis --> DataVolume
     
-    Prometheus -->|Metrics| FastAPI
-    Prometheus -->|Metrics| PostgreSQL
-    Prometheus -->|Metrics| Redis
-    Grafana -->|Dashboard| Prometheus
+    Prometheus --> FastAPI
+    Prometheus --> PostgreSQL
+    Prometheus --> Redis
+    Grafana --> Prometheus
     
-    DockerRegistry -->|Pull Images| Docker Host
-    CDN -->|Static Assets| User
+    DockerRegistry --> ReactApp
+    DockerRegistry --> FastAPI
+    CDN --> User
 
     %% Container Orchestration
     subgraph "Docker Compose"
         ComposeFile[docker-compose.yml]
-        ComposeFile --> FrontendContainer
-        ComposeFile --> BackendContainer
-        ComposeFile --> DatabaseContainer
-        ComposeFile --> MonitoringContainer
+        ComposeFile --> ReactApp
+        ComposeFile --> FastAPI
+        ComposeFile --> PostgreSQL
+        ComposeFile --> Prometheus
     end
 ```
 
@@ -132,7 +133,7 @@ graph TB
             end
         end
         
-        subgraph "File System"
+        subgraph "Volumes"
             DataVolume[Data Volume<br/>/var/lib/postgresql/data]
             MLModelVolume[ML Model Volume<br/>/app/ml_models]
             LogVolume[Log Volume<br/>/app/logs]
@@ -148,34 +149,35 @@ graph TB
 
     %% Network Connections
     User -->|HTTPS| NginxFrontend
-    NginxFrontend -->|HTTP| ReactApp
-    NginxFrontend -->|HTTP| FastAPI
+    NginxFrontend --> ReactApp
+    NginxFrontend --> FastAPI
     
-    FastAPI -->|SQL| PostgreSQL
-    FastAPI -->|Redis Protocol| Redis
-    FastAPI -->|File I/O| DataVolume
-    FastAPI -->|Model Access| MLModelVolume
+    FastAPI --> PostgreSQL
+    FastAPI --> Redis
+    FastAPI --> DataVolume
+    FastAPI --> MLModelVolume
     
-    MLModels -->|Model Files| MLModelVolume
-    MLModels -->|Logs| LogVolume
+    MLModels --> MLModelVolume
+    MLModels --> LogVolume
     
-    PostgreSQL -->|Data Files| DataVolume
-    Redis -->|Cache Files| DataVolume
+    PostgreSQL --> DataVolume
+    Redis --> DataVolume
     
-    Prometheus -->|Metrics| FastAPI
-    Prometheus -->|Metrics| PostgreSQL
-    Prometheus -->|Metrics| Redis
-    Grafana -->|Dashboard| Prometheus
+    Prometheus --> FastAPI
+    Prometheus --> PostgreSQL
+    Prometheus --> Redis
+    Grafana --> Prometheus
     
-    DockerRegistry -->|Pull Images| Docker Host
-    CDN -->|Static Assets| User
+    DockerRegistry --> ReactApp
+    DockerRegistry --> FastAPI
+    CDN --> User
 
     %% Container Orchestration
     subgraph "Docker Compose"
         ComposeFile[docker-compose.yml]
-        ComposeFile --> FrontendContainer
-        ComposeFile --> BackendContainer
-        ComposeFile --> DatabaseContainer
-        ComposeFile --> MonitoringContainer
+        ComposeFile --> ReactApp
+        ComposeFile --> FastAPI
+        ComposeFile --> PostgreSQL
+        ComposeFile --> Prometheus
     end
 ```

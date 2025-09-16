@@ -54,9 +54,6 @@ const UMLDiagrams: React.FC = () => {
   const [exportAnchorEl, setExportAnchorEl] = useState<null | HTMLElement>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
-  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   
   const diagramRefs = useRef<(HTMLDivElement | null)[]>([]);
   const diagramContainerRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -205,8 +202,6 @@ const UMLDiagrams: React.FC = () => {
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
-    // Reset pan offset when changing tabs
-    setPanOffset({ x: 0, y: 0 });
     
     // The useEffect will handle rendering the new diagram
   };
@@ -221,31 +216,14 @@ const UMLDiagrams: React.FC = () => {
 
   const handleResetView = () => {
     setZoomLevel(1);
-    setPanOffset({ x: 0, y: 0 });
-  };
-
-  const handleMouseDown = (event: React.MouseEvent) => {
-    if (event.button === 0) { // Left mouse button
-      setIsDragging(true);
-      setDragStart({ x: event.clientX - panOffset.x, y: event.clientY - panOffset.y });
-      event.preventDefault();
-    }
-  };
-
-  const handleMouseMove = (event: React.MouseEvent) => {
-    if (isDragging) {
-      setPanOffset({
-        x: event.clientX - dragStart.x,
-        y: event.clientY - dragStart.y
-      });
-    }
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
   };
 
   const handleWheel = (event: React.WheelEvent) => {
+    // Only handle wheel events when Ctrl key is pressed (to avoid touchpad gestures)
+    if (!event.ctrlKey) {
+      return;
+    }
+    
     event.preventDefault();
     const delta = event.deltaY > 0 ? -0.1 : 0.1;
     setZoomLevel(prev => Math.max(0.25, Math.min(3, prev + delta)));
@@ -410,27 +388,27 @@ const UMLDiagrams: React.FC = () => {
           >
             <MenuItem onClick={() => handleExportAs('svg-png')}>
               <Box>
-                <Typography variant="body2">Ultra High Quality PNG</Typography>
-                <Typography variant="caption" color="text.secondary">5x scale, perfect clarity, 5-15MB</Typography>
+                <Typography variant="body2">High Quality PNG</Typography>
+                <Typography variant="caption" color="text.secondary">3x scale, crisp and clear, 2-5MB</Typography>
               </Box>
             </MenuItem>
             <MenuItem onClick={() => handleExportAs('png')}>
               <Box>
-                <Typography variant="body2">High Quality PNG</Typography>
-                <Typography variant="caption" color="text.secondary">4x scale, crisp text, 3-8MB</Typography>
+                <Typography variant="body2">Standard PNG</Typography>
+                <Typography variant="caption" color="text.secondary">2.5x scale, good quality, 1-3MB</Typography>
               </Box>
             </MenuItem>
             <MenuItem onClick={() => handleExportAs('jpeg')}>
               <Box>
                 <Typography variant="body2">JPEG</Typography>
-                <Typography variant="caption" color="text.secondary">Compressed, good for sharing, &lt;2MB</Typography>
+                <Typography variant="caption" color="text.secondary">Compressed, perfect for sharing, &lt;1MB</Typography>
               </Box>
             </MenuItem>
             <Divider />
             <MenuItem onClick={() => handleExportAs('pdf')}>
               <Box>
-                <Typography variant="body2">PDF (Print Quality)</Typography>
-                <Typography variant="caption" color="text.secondary">300 DPI, crystal clear, &lt;5MB</Typography>
+                <Typography variant="body2">PDF (Optimized)</Typography>
+                <Typography variant="caption" color="text.secondary">150 DPI, clear & compact, &lt;2MB</Typography>
               </Box>
             </MenuItem>
           </Menu>
@@ -505,17 +483,13 @@ const UMLDiagrams: React.FC = () => {
                 
                 {/* User instructions */}
                 <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
-                  💡 Use mouse wheel to zoom • Click and drag to pan • Use controls above to reset view
+                  💡 Use Ctrl + mouse wheel to zoom • Scroll to navigate • Use controls above to reset view
                 </Typography>
                 
                 <Box
                   ref={(el: HTMLDivElement | null) => {
                     diagramContainerRefs.current[index] = el;
                   }}
-                  onMouseDown={handleMouseDown}
-                  onMouseMove={handleMouseMove}
-                  onMouseUp={handleMouseUp}
-                  onMouseLeave={handleMouseUp}
                   onWheel={handleWheel}
                   sx={{
                     width: '100%',
@@ -528,9 +502,7 @@ const UMLDiagrams: React.FC = () => {
                     border: '1px solid',
                     borderColor: 'divider',
                     p: 2,
-                    overflow: 'hidden',
-                    cursor: isDragging ? 'grabbing' : 'grab',
-                    userSelect: 'none',
+                    overflow: 'auto',
                     position: 'relative'
                   }}
                 >
@@ -550,10 +522,9 @@ const UMLDiagrams: React.FC = () => {
                         width: '100%',
                         display: 'flex',
                         justifyContent: 'center',
-                        transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
+                        transform: `scale(${zoomLevel})`,
                         transformOrigin: 'center center',
-                        transition: isDragging ? 'none' : 'transform 0.2s ease-in-out',
-                        pointerEvents: 'none', // Prevent interference with drag
+                        transition: 'transform 0.2s ease-in-out',
                         '& svg': { 
                           width: '100%',
                           minWidth: '1000px',

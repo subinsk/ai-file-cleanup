@@ -18,8 +18,8 @@ export const exportAsImage = async (
   const {
     filename = 'diagram',
     format = 'png',
-    quality = 1.0,
-    scale = 4
+    quality = 0.9,
+    scale = 2.5
   } = options;
 
   try {
@@ -118,24 +118,24 @@ const exportPDFFallback = async (element: HTMLElement, filename: string) => {
   console.log('PDF: Using html2canvas fallback method');
   
   try {
-    // Use html2canvas with high quality settings
+    // Use html2canvas with balanced quality settings
     const canvas = await html2canvas(element, {
       useCORS: true,
       allowTaint: true,
       background: '#ffffff',
       logging: false,
-      width: element.scrollWidth * 3, // Higher scale for better quality
-      height: element.scrollHeight * 3,
+      width: element.scrollWidth * 2, // Optimal scale for quality vs size
+      height: element.scrollHeight * 2,
     });
 
     console.log('PDF Fallback: Canvas created', { width: canvas.width, height: canvas.height });
 
-    const imgData = canvas.toDataURL('image/png', 1.0); // Maximum quality
+    const imgData = canvas.toDataURL('image/jpeg', 0.85); // JPEG compression for smaller size
     
-    // Calculate PDF dimensions with high scale
+    // Calculate PDF dimensions with optimal scale
     const mmPerPx = 0.264583; // 96 DPI to mm conversion
-    const canvasWidthMM = canvas.width * mmPerPx / 3; // Account for scale
-    const canvasHeightMM = canvas.height * mmPerPx / 3;
+    const canvasWidthMM = canvas.width * mmPerPx / 2; // Account for scale
+    const canvasHeightMM = canvas.height * mmPerPx / 2;
     
     console.log('PDF Fallback: PDF dimensions (mm)', { canvasWidthMM, canvasHeightMM });
     
@@ -253,9 +253,9 @@ export const exportAsPDF = async (
     const naturalWidth = img.naturalWidth || svgWidth;
     const naturalHeight = img.naturalHeight || svgHeight;
     
-    // Calculate high-quality canvas size (300 DPI for print quality)
+    // Calculate optimal canvas size (150 DPI for balanced quality/size)
     const dpi = 96; // Standard screen DPI
-    const pdfDpi = 300; // High-quality print DPI
+    const pdfDpi = 150; // Balanced quality DPI
     const scaleFactor = pdfDpi / dpi;
     
     const canvasWidth = Math.round(naturalWidth * scaleFactor);
@@ -282,11 +282,11 @@ export const exportAsPDF = async (
     // Clean up
     URL.revokeObjectURL(svgUrl);
 
-    // Convert to high-quality PNG
-    const imgData = canvas.toDataURL('image/png', 1.0); // Maximum quality
+    // Convert to compressed JPEG for smaller file size
+    const imgData = canvas.toDataURL('image/jpeg', 0.9); // High quality JPEG
     
-    // Calculate PDF dimensions (convert px to mm at 300 DPI)
-    const mmPerPx = 25.4 / 300; // mm per pixel at 300 DPI
+    // Calculate PDF dimensions (convert px to mm at 150 DPI)
+    const mmPerPx = 25.4 / 150; // mm per pixel at 150 DPI
     const pdfWidthMM = canvasWidth * mmPerPx;
     const pdfHeightMM = canvasHeight * mmPerPx;
     
@@ -343,8 +343,8 @@ export const exportSVGAsImage = async (
   const {
     filename = 'diagram',
     format = 'png',
-    quality = 1.0,
-    scale = 5
+    quality = 0.95,
+    scale = 3
   } = options;
 
   try {
