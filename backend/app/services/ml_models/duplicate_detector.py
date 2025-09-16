@@ -22,27 +22,37 @@ class DuplicateDetector:
     async def find_duplicates(self, file_list: List[str]) -> List[Tuple[str, str, float]]:
         """Find duplicate files in a list"""
         try:
+            print(f"🔍 Duplicate detector: Checking {len(file_list)} files")
             duplicates = []
             
             # Group files by size first (quick filter)
             size_groups = self._group_by_size(file_list)
+            print(f"📊 Duplicate detector: Grouped into {len(size_groups)} size groups")
             
             for size, files in size_groups.items():
                 if len(files) < 2:
+                    print(f"📁 Size {size}: {len(files)} files (skipping)")
                     continue
+                
+                print(f"📁 Size {size}: {len(files)} files (checking)")
                 
                 # Check for exact duplicates (hash-based)
                 exact_duplicates = await self._find_exact_duplicates(files)
+                print(f"🔍 Found {len(exact_duplicates)} exact duplicates")
                 duplicates.extend(exact_duplicates)
                 
                 # Check for similar files (perceptual/semantic)
                 similar_files = await self._find_similar_files(files)
+                print(f"🔍 Found {len(similar_files)} similar files")
                 duplicates.extend(similar_files)
             
+            print(f"🎯 Total duplicates found: {len(duplicates)}")
             return duplicates
             
         except Exception as e:
-            print(f"Error finding duplicates: {e}")
+            print(f"❌ Error finding duplicates: {e}")
+            import traceback
+            traceback.print_exc()
             return []
     
     def _group_by_size(self, file_list: List[str]) -> Dict[int, List[str]]:
@@ -64,21 +74,30 @@ class DuplicateDetector:
     async def _find_exact_duplicates(self, files: List[str]) -> List[Tuple[str, str, float]]:
         """Find exact duplicates using hash comparison"""
         try:
+            print(f"🔍 Checking {len(files)} files for exact duplicates")
             duplicates = []
             hashes = {}
             
             for file_path in files:
+                print(f"🔐 Calculating hash for: {file_path}")
                 file_hash = await self._calculate_file_hash(file_path)
+                print(f"🔐 Hash: {file_hash}")
+                
                 if file_hash in hashes:
                     # Found duplicate
+                    print(f"✅ Found duplicate: {hashes[file_hash]} <-> {file_path}")
                     duplicates.append((hashes[file_hash], file_path, 1.0))
                 else:
                     hashes[file_hash] = file_path
+                    print(f"📝 New unique file: {file_path}")
             
+            print(f"🎯 Found {len(duplicates)} exact duplicate pairs")
             return duplicates
             
         except Exception as e:
-            print(f"Error finding exact duplicates: {e}")
+            print(f"❌ Error finding exact duplicates: {e}")
+            import traceback
+            traceback.print_exc()
             return []
     
     async def _find_similar_files(self, files: List[str]) -> List[Tuple[str, str, float]]:
@@ -136,7 +155,21 @@ class DuplicateDetector:
     async def _calculate_perceptual_hash(self, file_path: str) -> str:
         """Calculate perceptual hash for image similarity"""
         try:
-            # Load image
+            # Check if file exists and is readable
+            if not os.path.exists(file_path):
+                print(f"Image file does not exist: {file_path}")
+                return ""
+            
+            # Load image with better error handling
+            try:
+                image = Image.open(file_path)
+                # Verify the image is valid
+                image.verify()
+            except Exception as img_error:
+                print(f"Invalid image file {file_path}: {img_error}")
+                return ""
+            
+            # Reopen the image (verify() closes it)
             image = Image.open(file_path)
             image = image.convert('L')  # Convert to grayscale
             image = image.resize((self.perceptual_hash_size, self.perceptual_hash_size))

@@ -5,15 +5,15 @@ import {
   Button,
   Card,
   CardContent,
-  Grid,
   Chip,
   IconButton,
   Collapse,
   List,
   ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
-  Divider
+  Divider,
+  Fade,
+  Avatar,
+  Tooltip
 } from '@mui/material';
 import {
   ExpandMore,
@@ -24,7 +24,10 @@ import {
   Description,
   VideoFile,
   AudioFile,
-  Code
+  Code,
+  Storage,
+  Warning,
+  CheckCircle
 } from '@mui/icons-material';
 
 interface DuplicateGroup {
@@ -42,6 +45,8 @@ interface DuplicateGroup {
     name: string;
     path: string;
     size: number | null;
+    file_type: string | null;
+    category: string | null;
   };
   similarity_scores: number[];
   total_size: number;
@@ -101,102 +106,204 @@ const DuplicatePanel: React.FC<DuplicatePanelProps> = ({ duplicates, onRefresh }
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h6">
-          Duplicate Files ({duplicates.length} groups)
-        </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Storage color="primary" />
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+            Duplicate Files
+          </Typography>
+          <Chip
+            label={`${duplicates.length} groups`}
+            size="small"
+            color="primary"
+            variant="outlined"
+          />
+        </Box>
         <Button
           variant="outlined"
           startIcon={<Refresh />}
           onClick={onRefresh}
           size="small"
+          sx={{ 
+            borderRadius: 2,
+            textTransform: 'none',
+            fontWeight: 500,
+          }}
         >
           Refresh
         </Button>
       </Box>
 
       {duplicates.length === 0 ? (
-        <Card>
-          <CardContent>
-            <Box sx={{ textAlign: 'center', py: 4 }}>
-              <FolderOpen sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
-              <Typography variant="h6" color="text.secondary">
-                No duplicate files found
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Start a scan to find duplicate files in your directories
-              </Typography>
-            </Box>
-          </CardContent>
-        </Card>
+        <Fade in={duplicates.length === 0}>
+          <Card 
+            elevation={0}
+            sx={{ 
+              border: '1px solid rgba(0, 0, 0, 0.05)',
+              background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+            }}
+          >
+            <CardContent>
+              <Box sx={{ textAlign: 'center', py: 6 }}>
+                <Avatar
+                  sx={{
+                    width: 64,
+                    height: 64,
+                    bgcolor: 'rgba(25, 118, 210, 0.1)',
+                    color: 'primary.main',
+                    mx: 'auto',
+                    mb: 2,
+                  }}
+                >
+                  <FolderOpen sx={{ fontSize: 32 }} />
+                </Avatar>
+                <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 600, mb: 1 }}>
+                  No duplicate files found
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Start a scan to find duplicate files in your directories
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        </Fade>
       ) : (
         <Box>
-          {duplicates.map((group) => (
-            <Card key={group.group_id} sx={{ mb: 2 }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography variant="h6">
-                      {group.files.length} duplicate files
-                    </Typography>
-                    <Chip
-                      label={`${formatBytes(group.space_wasted)} wasted`}
-                      color="warning"
-                      size="small"
-                    />
-                    <Chip
-                      label={`${formatBytes(group.total_size)} total`}
-                      color="info"
-                      size="small"
-                    />
+          {duplicates.map((group, index) => (
+            <Fade in key={group.group_id} timeout={300 + index * 100}>
+              <div>
+                <Card 
+                elevation={0}
+                sx={{ 
+                  mb: 3,
+                  border: '1px solid rgba(0, 0, 0, 0.05)',
+                  background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover': {
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                    transform: 'translateY(-2px)',
+                  },
+                }}
+              >
+                <CardContent>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Avatar
+                        sx={{
+                          bgcolor: 'rgba(255, 152, 0, 0.1)',
+                          color: 'warning.main',
+                          width: 40,
+                          height: 40,
+                        }}
+                      >
+                        <Warning />
+                      </Avatar>
+                      <Box>
+                        <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
+                          {group.files.length} duplicate files
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Detected on {formatDate(group.created_at)}
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Chip
+                        label={`${formatBytes(group.space_wasted)} wasted`}
+                        color="warning"
+                        size="small"
+                        icon={<Storage />}
+                      />
+                      <Chip
+                        label={`${formatBytes(group.total_size)} total`}
+                        color="info"
+                        size="small"
+                        variant="outlined"
+                      />
+                      <Tooltip title={expandedGroups.has(group.group_id) ? 'Collapse' : 'Expand'}>
+                        <IconButton 
+                          onClick={() => toggleGroup(group.group_id)}
+                          sx={{
+                            bgcolor: 'rgba(0, 0, 0, 0.05)',
+                            '&:hover': {
+                              bgcolor: 'rgba(0, 0, 0, 0.1)',
+                            },
+                          }}
+                        >
+                          {expandedGroups.has(group.group_id) ? <ExpandLess /> : <ExpandMore />}
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
                   </Box>
-                  <IconButton onClick={() => toggleGroup(group.group_id)}>
-                    {expandedGroups.has(group.group_id) ? <ExpandLess /> : <ExpandMore />}
-                  </IconButton>
-                </Box>
-
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                  Detected on {formatDate(group.created_at)}
-                </Typography>
 
                 <Collapse in={expandedGroups.has(group.group_id)}>
-                  <Box sx={{ mt: 2 }}>
-                    <Typography variant="subtitle2" gutterBottom>
-                      Primary File:
+                  <Box sx={{ mt: 3 }}>
+                    <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
+                      Primary File
                     </Typography>
-                    <Card variant="outlined" sx={{ mb: 2, bgcolor: 'success.light', bgcolor: 'rgba(76, 175, 80, 0.1)' }}>
-                      <CardContent sx={{ py: 1 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          {getFileIcon(group.primary_file.file_type, null)}
+                    <Card 
+                      variant="outlined" 
+                      sx={{ 
+                        mb: 3, 
+                        bgcolor: 'rgba(76, 175, 80, 0.05)',
+                        border: '1px solid rgba(76, 175, 80, 0.2)',
+                      }}
+                    >
+                      <CardContent sx={{ py: 2 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <Avatar
+                            sx={{
+                              bgcolor: 'rgba(76, 175, 80, 0.1)',
+                              color: 'success.main',
+                              width: 40,
+                              height: 40,
+                            }}
+                          >
+                            {getFileIcon(group.primary_file.file_type, group.primary_file.category)}
+                          </Avatar>
                           <Box sx={{ flexGrow: 1 }}>
-                            <Typography variant="body2" fontWeight="bold">
+                            <Typography variant="body1" fontWeight="bold" sx={{ mb: 0.5 }}>
                               {group.primary_file.name}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
                               {group.primary_file.path}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                            <Typography variant="body2" color="text.secondary">
                               {formatBytes(group.primary_file.size)}
                             </Typography>
                           </Box>
-                          <Chip label="Primary" color="success" size="small" />
+                          <Chip 
+                            label="Primary" 
+                            color="success" 
+                            size="small"
+                            icon={<CheckCircle />}
+                          />
                         </Box>
                       </CardContent>
                     </Card>
 
-                    <Typography variant="subtitle2" gutterBottom>
-                      Duplicate Files:
+                    <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
+                      Duplicate Files
                     </Typography>
-                    <List dense>
+                    <List sx={{ bgcolor: 'rgba(0, 0, 0, 0.02)', borderRadius: 2, p: 1 }}>
                       {group.files
                         .filter(file => file.id !== group.primary_file.id)
                         .map((file, index) => (
                           <React.Fragment key={file.id}>
-                            <ListItem>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexGrow: 1 }}>
-                                {getFileIcon(file.file_type, file.category)}
+                            <ListItem sx={{ py: 1.5 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexGrow: 1 }}>
+                                <Avatar
+                                  sx={{
+                                    bgcolor: 'rgba(0, 0, 0, 0.05)',
+                                    color: 'text.secondary',
+                                    width: 32,
+                                    height: 32,
+                                  }}
+                                >
+                                  {getFileIcon(file.file_type, file.category)}
+                                </Avatar>
                                 <Box sx={{ flexGrow: 1 }}>
-                                  <Typography variant="body2">
+                                  <Typography variant="body2" fontWeight="500">
                                     {file.name}
                                   </Typography>
                                   <Typography variant="caption" color="text.secondary">
@@ -210,10 +317,11 @@ const DuplicatePanel: React.FC<DuplicatePanelProps> = ({ duplicates, onRefresh }
                                   label={`${(group.similarity_scores[index] * 100).toFixed(1)}% similar`}
                                   color={getSimilarityColor(group.similarity_scores[index]) as any}
                                   size="small"
+                                  variant="outlined"
                                 />
                               </Box>
                             </ListItem>
-                            {index < group.files.length - 2 && <Divider />}
+                            {index < group.files.length - 2 && <Divider sx={{ mx: 2 }} />}
                           </React.Fragment>
                         ))}
                     </List>
@@ -221,6 +329,8 @@ const DuplicatePanel: React.FC<DuplicatePanelProps> = ({ duplicates, onRefresh }
                 </Collapse>
               </CardContent>
             </Card>
+              </div>
+            </Fade>
           ))}
         </Box>
       )}

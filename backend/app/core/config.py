@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     """Application settings"""
     
     # Database
-    database_url: str = "postgresql://postgres:password@localhost:5432/ai_file_cleanup"
+    database_url: str = "postgresql://postgres:admin@localhost:5432/ai_file_cleanup"
     
     # Redis
     redis_url: str = "redis://localhost:6379"

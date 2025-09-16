@@ -11,14 +11,13 @@ import {
   FormControlLabel,
   Radio,
   Checkbox,
-  TextField,
   Slider,
   Grid,
   Alert,
   Divider,
   Chip
 } from '@mui/material';
-import { Delete, MoveToInbox, Archive, FolderOpen } from '@mui/icons-material';
+import { Delete, MoveToInbox, Archive } from '@mui/icons-material';
 
 interface DuplicateGroup {
   group_id: string;
@@ -35,6 +34,8 @@ interface DuplicateGroup {
     name: string;
     path: string;
     size: number | null;
+    file_type: string | null;
+    category: string | null;
   };
   similarity_scores: number[];
   total_size: number;

@@ -3,235 +3,207 @@ import {
   AppBar,
   Toolbar,
   Typography,
-  Container,
-  Grid,
-  Paper,
   Box,
-  CircularProgress,
-  Alert,
-  Snackbar
+  Tabs,
+  Tab,
+  createTheme,
+  ThemeProvider,
+  CssBaseline,
+  Container
 } from '@mui/material';
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
-import ScanPanel from './components/ScanPanel';
-import DuplicatePanel from './components/DuplicatePanel';
-import CleanupPanel from './components/CleanupPanel';
-import StatsPanel from './components/StatsPanel';
-import { useWebSocket } from './hooks/useWebSocket';
-import { apiService } from './services/apiService';
+import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import Dashboard from './components/Dashboard';
+import NewScanPage from './components/NewScanPage';
+import ScanDetailPage from './components/ScanDetailPage';
+import UMLDiagrams from './components/UMDiagrams';
 
-interface ScanStatus {
-  session_id: string;
-  status: string;
-  progress_percentage: number;
-  files_processed: number;
-  files_total: number;
-  duplicates_found: number;
-  errors_count: number;
-  started_at: string | null;
-  completed_at: string | null;
-  error_message: string | null;
-}
 
-interface DuplicateGroup {
-  group_id: string;
-  files: Array<{
-    id: string;
-    name: string;
-    path: string;
-    size: number | null;
-    file_type: string | null;
-    category: string | null;
-  }>;
-  primary_file: {
-    id: string;
-    name: string;
-    path: string;
-    size: number | null;
-  };
-  similarity_scores: number[];
-  total_size: number;
-  space_wasted: number;
-  created_at: string;
-}
+// Create modern theme
+const theme = createTheme({
+  palette: {
+    mode: 'light',
+    primary: {
+      main: '#1976d2',
+      light: '#42a5f5',
+      dark: '#1565c0',
+    },
+    secondary: {
+      main: '#dc004e',
+      light: '#ff5983',
+      dark: '#9a0036',
+    },
+    background: {
+      default: '#f8fafc',
+      paper: '#ffffff',
+    },
+    text: {
+      primary: '#1a202c',
+      secondary: '#4a5568',
+    },
+  },
+  typography: {
+    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+    h4: {
+      fontWeight: 600,
+      letterSpacing: '-0.025em',
+    },
+    h5: {
+      fontWeight: 600,
+      letterSpacing: '-0.025em',
+    },
+    h6: {
+      fontWeight: 600,
+      letterSpacing: '-0.025em',
+    },
+  },
+  shape: {
+    borderRadius: 12,
+  },
+  components: {
+    MuiAppBar: {
+      styleOverrides: {
+        root: {
+          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+          backdropFilter: 'blur(8px)',
+          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          color: '#1a202c',
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+          border: '1px solid rgba(0, 0, 0, 0.05)',
+        },
+        elevation1: {
+          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+          fontWeight: 500,
+          borderRadius: 8,
+        },
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderRadius: 12,
+          border: '1px solid rgba(0, 0, 0, 0.05)',
+        },
+      },
+    },
+  },
+});
 
-function App() {
-  const [scanStatus, setScanStatus] = useState<ScanStatus | null>(null);
-  const [duplicates, setDuplicates] = useState<DuplicateGroup[]>([]);
-  const [stats, setStats] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
-
-  // WebSocket connection
-  const { socket, isConnected } = useWebSocket('ws://localhost:8000/ws/scan');
+// Navigation component
+const Navigation: React.FC = () => {
+  const location = useLocation();
+  const [value, setValue] = useState(0);
 
   useEffect(() => {
-    // Load initial data
-    loadStats();
-    loadDuplicates();
-  }, []);
-
-  const loadStats = async () => {
-    try {
-      const statsData = await apiService.getDuplicateStats();
-      setStats(statsData);
-    } catch (err) {
-      console.error('Error loading stats:', err);
+    if (location.pathname === '/uml-diagrams') {
+      setValue(1);
+    } else {
+      setValue(0);
     }
-  };
+  }, [location]);
 
-  const loadDuplicates = async () => {
-    try {
-      const duplicatesData = await apiService.getDuplicates();
-      setDuplicates(duplicatesData);
-    } catch (err) {
-      console.error('Error loading duplicates:', err);
-    }
-  };
-
-  const handleScanStart = async (directoryPath: string) => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const response = await apiService.startScan(directoryPath);
-      setSnackbarMessage('Scan started successfully!');
-      setSnackbarOpen(true);
-      
-      // Start polling for status updates
-      pollScanStatus(response.session_id);
-      
-    } catch (err: any) {
-      setError(err.message || 'Failed to start scan');
-      setSnackbarMessage('Failed to start scan');
-      setSnackbarOpen(true);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const pollScanStatus = async (sessionId: string) => {
-    try {
-      const status = await apiService.getScanStatus(sessionId);
-      setScanStatus(status);
-      
-      // Continue polling if scan is still running
-      if (status.status === 'running') {
-        setTimeout(() => pollScanStatus(sessionId), 2000);
-      } else if (status.status === 'completed') {
-        // Reload duplicates when scan completes
-        loadDuplicates();
-        loadStats();
-        setSnackbarMessage('Scan completed successfully!');
-        setSnackbarOpen(true);
-      } else if (status.status === 'failed') {
-        setError(status.error_message || 'Scan failed');
-        setSnackbarMessage('Scan failed');
-        setSnackbarOpen(true);
-      }
-    } catch (err) {
-      console.error('Error polling scan status:', err);
-    }
-  };
-
-  const handleCleanup = async (cleanupRules: any) => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const response = await apiService.executeCleanup(cleanupRules);
-      setSnackbarMessage('Cleanup started successfully!');
-      setSnackbarOpen(true);
-      
-      // Reload data after cleanup
-      setTimeout(() => {
-        loadDuplicates();
-        loadStats();
-      }, 2000);
-      
-    } catch (err: any) {
-      setError(err.message || 'Failed to start cleanup');
-      setSnackbarMessage('Failed to start cleanup');
-      setSnackbarOpen(true);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSnackbarClose = () => {
-    setSnackbarOpen(false);
+  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+    setValue(newValue);
   };
 
   return (
-    <Box sx={{ flexGrow: 1 }}>
-      <AppBar position="static">
-        <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            AI File Management System
+    <AppBar position="sticky" elevation={0}>
+      <Container maxWidth="xl">
+        <Toolbar disableGutters>
+          <Typography 
+            variant="h5" 
+            component="div" 
+            sx={{ 
+              flexGrow: 1,
+              fontWeight: 700,
+              background: 'linear-gradient(45deg, #1976d2, #42a5f5)',
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}
+          >
+            AI File Management
           </Typography>
-          <Typography variant="body2">
-            {isConnected ? '🟢 Connected' : '🔴 Disconnected'}
-          </Typography>
+          <Tabs 
+            value={value} 
+            onChange={handleChange} 
+            textColor="inherit"
+            sx={{
+              '& .MuiTab-root': {
+                minHeight: 48,
+                fontWeight: 500,
+                '&.Mui-selected': {
+                  color: '#1976d2',
+                },
+              },
+              '& .MuiTabs-indicator': {
+                backgroundColor: '#1976d2',
+                height: 3,
+                borderRadius: '3px 3px 0 0',
+              },
+            }}
+          >
+            <Tab 
+              label="Dashboard" 
+              component={Link} 
+              to="/" 
+            />
+            <Tab 
+              label="UML Diagrams" 
+              component={Link} 
+              to="/uml-diagrams" 
+            />
+          </Tabs>
         </Toolbar>
-      </AppBar>
-
-      <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
-            {error}
-          </Alert>
-        )}
-
-        <Grid container spacing={3}>
-          {/* Scan Panel */}
-          <Grid item xs={12} md={6}>
-            <Paper sx={{ p: 2 }}>
-              <ScanPanel
-                onScanStart={handleScanStart}
-                scanStatus={scanStatus}
-                loading={loading}
-              />
-            </Paper>
-          </Grid>
-
-          {/* Stats Panel */}
-          <Grid item xs={12} md={6}>
-            <Paper sx={{ p: 2 }}>
-              <StatsPanel stats={stats} />
-            </Paper>
-          </Grid>
-
-          {/* Duplicates Panel */}
-          <Grid item xs={12}>
-            <Paper sx={{ p: 2 }}>
-              <DuplicatePanel
-                duplicates={duplicates}
-                onRefresh={loadDuplicates}
-              />
-            </Paper>
-          </Grid>
-
-          {/* Cleanup Panel */}
-          <Grid item xs={12}>
-            <Paper sx={{ p: 2 }}>
-              <CleanupPanel
-                onCleanup={handleCleanup}
-                duplicates={duplicates}
-                loading={loading}
-              />
-            </Paper>
-          </Grid>
-        </Grid>
       </Container>
+    </AppBar>
+  );
+};
 
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={6000}
-        onClose={handleSnackbarClose}
-        message={snackbarMessage}
-      />
-    </Box>
+function App() {
+  return (
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Router>
+        <Box sx={{ 
+          flexGrow: 1,
+          minHeight: '100vh',
+          background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+        }}>
+          <Navigation />
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/scan/new" element={<NewScanPage />} />
+            <Route path="/scan/:scanId" element={<ScanDetailPage />} />
+            <Route path="/uml-diagrams" element={<UMLDiagrams />} />
+            <Route path="*" element={
+              <Box sx={{ p: 4, textAlign: 'center' }}>
+                <Typography variant="h4">404 - Page Not Found</Typography>
+                <Typography variant="body1" sx={{ mt: 2 }}>
+                  The page you're looking for doesn't exist.
+                </Typography>
+                <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>
+                  Current URL: {window.location.pathname}
+                </Typography>
+              </Box>
+            } />
+          </Routes>
+        </Box>
+      </Router>
+    </ThemeProvider>
   );
 }
 

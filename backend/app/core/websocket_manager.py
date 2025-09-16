@@ -93,3 +93,7 @@ class WebSocketManager:
         if session_id:
             return len(self.active_connections.get(session_id, []))
         return sum(len(connections) for connections in self.active_connections.values())
+
+
+# Create a global instance
+websocket_manager = WebSocketManager()

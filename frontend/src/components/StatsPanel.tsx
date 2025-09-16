@@ -6,13 +6,19 @@ import {
   CardContent,
   Grid,
   LinearProgress,
-  Chip
+  Chip,
+  Fade,
+  Avatar,
+  Divider
 } from '@mui/material';
 import {
   Storage,
-  Duplicate,
+  ContentCopy,
   FolderOpen,
-  Warning
+  Warning,
+  TrendingUp,
+  Speed,
+  CheckCircle
 } from '@mui/icons-material';
 
 interface StatsPanelProps {
@@ -50,14 +56,38 @@ const StatsPanel: React.FC<StatsPanelProps> = ({ stats }) => {
 
   if (!stats) {
     return (
-      <Card>
+      <Card 
+        elevation={0}
+        sx={{ 
+          border: '1px solid rgba(0, 0, 0, 0.05)',
+          background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+        }}
+      >
         <CardContent>
-          <Typography variant="h6" gutterBottom>
-            Statistics
-          </Typography>
-          <Box sx={{ textAlign: 'center', py: 4 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+            <TrendingUp color="primary" />
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              Statistics
+            </Typography>
+          </Box>
+          <Box sx={{ textAlign: 'center', py: 6 }}>
+            <Avatar
+              sx={{
+                width: 64,
+                height: 64,
+                bgcolor: 'rgba(25, 118, 210, 0.1)',
+                color: 'primary.main',
+                mx: 'auto',
+                mb: 2,
+              }}
+            >
+              <TrendingUp sx={{ fontSize: 32 }} />
+            </Avatar>
+            <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 600, mb: 1 }}>
+              No data available
+            </Typography>
             <Typography variant="body2" color="text.secondary">
-              No data available. Start a scan to see statistics.
+              Start a scan to see statistics
             </Typography>
           </Box>
         </CardContent>
@@ -66,93 +96,188 @@ const StatsPanel: React.FC<StatsPanelProps> = ({ stats }) => {
   }
 
   return (
-    <Card>
+    <Card 
+      elevation={0}
+      sx={{ 
+        border: '1px solid rgba(0, 0, 0, 0.05)',
+        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+      }}
+    >
       <CardContent>
-        <Typography variant="h6" gutterBottom>
-          Statistics
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+          <TrendingUp color="primary" />
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+            Statistics
+          </Typography>
+        </Box>
 
-        <Grid container spacing={2}>
+        <Grid container spacing={3}>
           {/* Duplicate Groups */}
           <Grid item xs={6} sm={3}>
-            <Box sx={{ textAlign: 'center' }}>
-              <Duplicate color="primary" sx={{ fontSize: 32, mb: 1 }} />
-              <Typography variant="h4" color="primary">
-                {stats.total_duplicate_groups}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Duplicate Groups
-              </Typography>
-            </Box>
+            <Fade in timeout={300}>
+              <Box sx={{ 
+                textAlign: 'center', 
+                p: 2,
+                bgcolor: 'rgba(25, 118, 210, 0.05)',
+                borderRadius: 2,
+                border: '1px solid rgba(25, 118, 210, 0.1)',
+              }}>
+                <Avatar
+                  sx={{
+                    bgcolor: 'rgba(25, 118, 210, 0.1)',
+                    color: 'primary.main',
+                    width: 48,
+                    height: 48,
+                    mx: 'auto',
+                    mb: 1,
+                  }}
+                >
+                  <ContentCopy />
+                </Avatar>
+                <Typography variant="h4" color="primary" sx={{ fontWeight: 700, mb: 0.5 }}>
+                  {stats.total_duplicate_groups}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                  Duplicate Groups
+                </Typography>
+              </Box>
+            </Fade>
           </Grid>
 
           {/* Duplicate Files */}
           <Grid item xs={6} sm={3}>
-            <Box sx={{ textAlign: 'center' }}>
-              <FolderOpen color="secondary" sx={{ fontSize: 32, mb: 1 }} />
-              <Typography variant="h4" color="secondary">
-                {stats.total_duplicate_files}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Duplicate Files
-              </Typography>
-            </Box>
+            <Fade in timeout={500}>
+              <Box sx={{ 
+                textAlign: 'center', 
+                p: 2,
+                bgcolor: 'rgba(156, 39, 176, 0.05)',
+                borderRadius: 2,
+                border: '1px solid rgba(156, 39, 176, 0.1)',
+              }}>
+                <Avatar
+                  sx={{
+                    bgcolor: 'rgba(156, 39, 176, 0.1)',
+                    color: 'secondary.main',
+                    width: 48,
+                    height: 48,
+                    mx: 'auto',
+                    mb: 1,
+                  }}
+                >
+                  <FolderOpen />
+                </Avatar>
+                <Typography variant="h4" color="secondary" sx={{ fontWeight: 700, mb: 0.5 }}>
+                  {stats.total_duplicate_files}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                  Duplicate Files
+                </Typography>
+              </Box>
+            </Fade>
           </Grid>
 
           {/* Space Wasted */}
           <Grid item xs={6} sm={3}>
-            <Box sx={{ textAlign: 'center' }}>
-              <Storage color="warning" sx={{ fontSize: 32, mb: 1 }} />
-              <Typography variant="h4" color="warning.main">
-                {stats.space_wasted_gb.toFixed(1)}GB
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Space Wasted
-              </Typography>
-            </Box>
+            <Fade in timeout={700}>
+              <Box sx={{ 
+                textAlign: 'center', 
+                p: 2,
+                bgcolor: 'rgba(255, 152, 0, 0.05)',
+                borderRadius: 2,
+                border: '1px solid rgba(255, 152, 0, 0.1)',
+              }}>
+                <Avatar
+                  sx={{
+                    bgcolor: 'rgba(255, 152, 0, 0.1)',
+                    color: 'warning.main',
+                    width: 48,
+                    height: 48,
+                    mx: 'auto',
+                    mb: 1,
+                  }}
+                >
+                  <Storage />
+                </Avatar>
+                <Typography variant="h4" color="warning.main" sx={{ fontWeight: 700, mb: 0.5 }}>
+                  {stats.space_wasted_gb.toFixed(1)}GB
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                  Space Wasted
+                </Typography>
+              </Box>
+            </Fade>
           </Grid>
 
           {/* Largest Group */}
           <Grid item xs={6} sm={3}>
-            <Box sx={{ textAlign: 'center' }}>
-              <Warning color="error" sx={{ fontSize: 32, mb: 1 }} />
-              <Typography variant="h4" color="error.main">
-                {stats.largest_group_size}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Largest Group
-              </Typography>
-            </Box>
+            <Fade in timeout={900}>
+              <Box sx={{ 
+                textAlign: 'center', 
+                p: 2,
+                bgcolor: 'rgba(244, 67, 54, 0.05)',
+                borderRadius: 2,
+                border: '1px solid rgba(244, 67, 54, 0.1)',
+              }}>
+                <Avatar
+                  sx={{
+                    bgcolor: 'rgba(244, 67, 54, 0.1)',
+                    color: 'error.main',
+                    width: 48,
+                    height: 48,
+                    mx: 'auto',
+                    mb: 1,
+                  }}
+                >
+                  <Warning />
+                </Avatar>
+                <Typography variant="h4" color="error.main" sx={{ fontWeight: 700, mb: 0.5 }}>
+                  {stats.largest_group_size}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                  Largest Group
+                </Typography>
+              </Box>
+            </Fade>
           </Grid>
         </Grid>
 
-        <Box sx={{ mt: 3 }}>
-          <Typography variant="subtitle2" gutterBottom>
+        <Divider sx={{ my: 3 }} />
+
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
             Space Wasted Breakdown
           </Typography>
           
-          <Box sx={{ mb: 2 }}>
+          <Box sx={{ mb: 3 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-              <Typography variant="body2">
+              <Typography variant="body2" color="text.secondary">
                 Total Space Wasted
               </Typography>
-              <Typography variant="body2" fontWeight="bold">
+              <Typography variant="body2" fontWeight="bold" color="warning.main">
                 {formatBytes(stats.total_space_wasted)}
               </Typography>
             </Box>
             <LinearProgress
               variant="determinate"
-              value={Math.min((stats.space_wasted_gb / 50) * 100, 100)}
+              value={Math.min((stats.space_wasted_mb / 100) * 100, 100)}
               color={getSpaceWastedColor(stats.space_wasted_gb) as any}
-              sx={{ height: 8, borderRadius: 4 }}
+              sx={{ 
+                height: 8, 
+                borderRadius: 4,
+                backgroundColor: 'rgba(0, 0, 0, 0.1)',
+                '& .MuiLinearProgress-bar': {
+                  borderRadius: 4,
+                },
+              }}
             />
           </Box>
 
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
             <Chip
               label={`${stats.space_wasted_mb.toFixed(1)} MB`}
               color="info"
               size="small"
+              variant="outlined"
             />
             <Chip
               label={`${stats.space_wasted_gb.toFixed(2)} GB`}
@@ -163,33 +288,48 @@ const StatsPanel: React.FC<StatsPanelProps> = ({ stats }) => {
               label={`Severity: ${getSpaceWastedSeverity(stats.space_wasted_gb)}`}
               color={getSpaceWastedColor(stats.space_wasted_gb) as any}
               size="small"
+              icon={<Speed />}
             />
           </Box>
         </Box>
 
         {stats.most_common_type && (
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="subtitle2" gutterBottom>
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600, mb: 1 }}>
               Most Common Duplicate Type
             </Typography>
             <Chip
               label={stats.most_common_type}
               color="primary"
               variant="outlined"
+              icon={<ContentCopy />}
             />
           </Box>
         )}
 
         {/* Recommendations */}
-        <Box sx={{ mt: 3, p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
-          <Typography variant="subtitle2" gutterBottom>
-            Recommendations
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {stats.space_wasted_gb > 10 ? (
+        <Box sx={{ 
+          mt: 3, 
+          p: 3, 
+          bgcolor: 'rgba(0, 0, 0, 0.02)', 
+          borderRadius: 2,
+          border: '1px solid rgba(0, 0, 0, 0.05)',
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+            <CheckCircle color="primary" sx={{ fontSize: 20 }} />
+            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+              Recommendations
+            </Typography>
+          </Box>
+          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+            {stats.total_duplicate_groups === 0 ? (
+              "No duplicates found. Your files are well organized!"
+            ) : stats.space_wasted_gb > 10 ? (
               "High space waste detected! Consider running cleanup operations to free up significant storage space."
             ) : stats.space_wasted_gb > 1 ? (
               "Moderate space waste detected. Cleanup operations can help optimize your storage."
+            ) : stats.total_duplicate_groups > 0 ? (
+              "Duplicates detected but minimal space waste. Consider reviewing duplicate groups for organization."
             ) : (
               "Low space waste. Your files are well organized!"
             )}

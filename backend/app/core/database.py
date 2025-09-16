@@ -38,6 +38,15 @@ async def get_db():
             await session.close()
 
 
+async def get_async_session():
+    """Generator to get database session for background tasks"""
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+        finally:
+            await session.close()
+
+
 async def init_db():
     """Initialize database tables"""
     async with engine.begin() as conn:

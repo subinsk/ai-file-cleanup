@@ -1,0 +1,4 @@
+FAKE_ZIP_DATA
+This is a simulated backup file.
+Contains compressed data from previous backup.
+Should be detected as a different file type.

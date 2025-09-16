@@ -46,3 +46,4 @@ echo "To start the frontend manually:"
 echo "cd frontend"
 echo "npm start"
 echo
+

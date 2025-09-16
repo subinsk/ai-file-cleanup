@@ -21,18 +21,29 @@ class DuplicateService:
     
     async def get_duplicate_groups(
         self, 
+        db: AsyncSession,
         session_id: Optional[str] = None,
         limit: int = 50,
-        offset: int = 0,
-        db: AsyncSession
+        offset: int = 0
     ) -> List[DuplicateGroup]:
         """Get duplicate file groups"""
         try:
-            # Query duplicate groups
-            query = select(Duplicate).offset(offset).limit(limit)
+            # Query duplicate groups with session filtering
             if session_id:
-                # Filter by session if provided
-                pass  # Would need to join with scan sessions
+                # Join with files to filter by session_id (check if file_id belongs to session)
+                from sqlalchemy.orm import aliased
+                File1 = aliased(File)
+                File2 = aliased(File)
+                
+                query = select(Duplicate).join(
+                    File1, Duplicate.file_id == File1.id
+                ).join(
+                    File2, Duplicate.duplicate_file_id == File2.id
+                ).where(
+                    (File1.scan_session_id == session_id) | (File2.scan_session_id == session_id)
+                ).offset(offset).limit(limit)
+            else:
+                query = select(Duplicate).offset(offset).limit(limit)
             
             result = await db.execute(query)
             duplicates = result.scalars().all()
@@ -113,23 +124,69 @@ class DuplicateService:
             modified_at=file.modified_at
         )
     
-    async def get_duplicate_stats(self, db: AsyncSession) -> DuplicateStats:
+    async def get_duplicate_stats(self, db: AsyncSession, session_id: Optional[str] = None) -> DuplicateStats:
         """Get duplicate statistics"""
         try:
-            # Count duplicate groups
-            groups_query = select(func.count(func.distinct(Duplicate.duplicate_group_id)))
-            groups_result = await db.execute(groups_query)
-            total_groups = groups_result.scalar() or 0
-            
-            # Count duplicate files
-            files_query = select(func.count(Duplicate.id))
-            files_result = await db.execute(files_query)
-            total_files = files_result.scalar() or 0
-            
-            # Calculate space wasted
-            space_query = select(func.sum(File.size)).join(Duplicate, File.id == Duplicate.duplicate_file_id)
-            space_result = await db.execute(space_query)
-            space_wasted = space_result.scalar() or 0
+            if session_id:
+                # Filter by session_id
+                from sqlalchemy.orm import aliased
+                File1 = aliased(File)
+                File2 = aliased(File)
+                
+                # Count duplicate groups
+                groups_query = select(func.count(func.distinct(Duplicate.duplicate_group_id))).join(
+                    File1, Duplicate.file_id == File1.id
+                ).join(
+                    File2, Duplicate.duplicate_file_id == File2.id
+                ).where(
+                    (File1.scan_session_id == session_id) | (File2.scan_session_id == session_id)
+                )
+                groups_result = await db.execute(groups_query)
+                total_groups = groups_result.scalar() or 0
+                
+                # Count duplicate files
+                files_query = select(func.count(Duplicate.id)).join(
+                    File1, Duplicate.file_id == File1.id
+                ).join(
+                    File2, Duplicate.duplicate_file_id == File2.id
+                ).where(
+                    (File1.scan_session_id == session_id) | (File2.scan_session_id == session_id)
+                )
+                files_result = await db.execute(files_query)
+                total_files = files_result.scalar() or 0
+                
+                # Calculate space wasted (only count non-primary duplicate files)
+                # We need to find files that are duplicates and belong to the session
+                space_query = select(func.sum(File2.size)).join(
+                    Duplicate, 
+                    File2.id == Duplicate.duplicate_file_id
+                ).join(
+                    File1, Duplicate.file_id == File1.id
+                ).where(
+                    Duplicate.is_primary == 'false',
+                    (File1.scan_session_id == session_id) | (File2.scan_session_id == session_id)
+                )
+                space_result = await db.execute(space_query)
+                space_wasted = space_result.scalar() or 0
+            else:
+                # Global stats (no session filtering)
+                # Count duplicate groups
+                groups_query = select(func.count(func.distinct(Duplicate.duplicate_group_id)))
+                groups_result = await db.execute(groups_query)
+                total_groups = groups_result.scalar() or 0
+                
+                # Count duplicate files
+                files_query = select(func.count(Duplicate.id))
+                files_result = await db.execute(files_query)
+                total_files = files_result.scalar() or 0
+                
+                # Calculate space wasted (only count non-primary duplicate files)
+                space_query = select(func.sum(File.size)).join(
+                    Duplicate, 
+                    File.id == Duplicate.duplicate_file_id
+                ).where(Duplicate.is_primary == 'false')
+                space_result = await db.execute(space_query)
+                space_wasted = space_result.scalar() or 0
             
             return DuplicateStats(
                 total_duplicate_groups=total_groups,

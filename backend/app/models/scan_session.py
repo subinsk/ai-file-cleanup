@@ -5,6 +5,7 @@ Scan session model for tracking scanning operations
 from sqlalchemy import Column, String, Integer, DateTime, Text, Float
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 import uuid
 
 from app.core.database import Base
@@ -26,6 +27,9 @@ class ScanSession(Base):
     started_at = Column(DateTime(timezone=True), server_default=func.now())
     completed_at = Column(DateTime(timezone=True), nullable=True)
     error_message = Column(Text, nullable=True)
+    
+    # Relationships
+    files = relationship("File", back_populates="scan_session")
     
     def __repr__(self):
         return f"<ScanSession(id={self.id}, directory='{self.directory_path}', status='{self.status}')>"

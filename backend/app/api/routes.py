@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
 import uuid
 
-from app.core.database import get_db
+from app.core.database import get_db, get_async_session
 from app.models.file import File
 from app.models.duplicate import Duplicate
 from app.models.scan_session import ScanSession
@@ -27,6 +27,23 @@ duplicate_service = DuplicateService()
 cleanup_service = CleanupService()
 
 
+async def run_scan_task(session_id: str, directory_path: str):
+    """Background task to run the scan with its own database session"""
+    try:
+        print(f"🚀 Background scan task started for session: {session_id}")
+        print(f"📁 Directory path: {directory_path}")
+        
+        async for db in get_async_session():
+            print(f"🔗 Database session created for background task")
+            await scanner_service.scan_directory(session_id, directory_path, db)
+            print(f"✅ Background scan task completed for session: {session_id}")
+            break  # Exit after first iteration
+    except Exception as e:
+        print(f"❌ Background scan task failed: {e}")
+        import traceback
+        traceback.print_exc()
+
+
 @api_router.get("/health")
 async def health_check():
     """Health check endpoint"""
@@ -42,6 +59,8 @@ async def start_scan(
 ):
     """Start a new directory scan"""
     try:
+        print(f"🚀 Starting scan request for directory: {request.directory_path}")
+        
         # Create scan session
         session = ScanSession(
             directory_path=request.directory_path,
@@ -51,20 +70,28 @@ async def start_scan(
         await db.commit()
         await db.refresh(session)
         
-        # Start background scan
-        background_tasks.add_task(
-            scanner_service.scan_directory,
-            str(session.id),
-            request.directory_path,
-            db
-        )
+        print(f"✅ Scan session created: {session.id}")
         
-        return ScanResponse(
+        # Start background scan
+        print(f"🔄 Adding background task for scan session: {session.id}")
+        background_tasks.add_task(
+            run_scan_task,
+            str(session.id),
+            request.directory_path
+        )
+        print(f"✅ Background task added successfully")
+        
+        response = ScanResponse(
             session_id=str(session.id),
             status="started",
             message="Scan started successfully"
         )
+        print(f"✅ Returning response: {response}")
+        return response
     except Exception as e:
+        print(f"❌ Error starting scan: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to start scan: {str(e)}")
 
 
@@ -125,10 +152,10 @@ async def get_duplicates(
     """Get duplicate files"""
     try:
         duplicates = await duplicate_service.get_duplicate_groups(
+            db=db,
             session_id=session_id,
             limit=limit,
-            offset=offset,
-            db=db
+            offset=offset
         )
         return duplicates
     except Exception as e:
@@ -136,10 +163,13 @@ async def get_duplicates(
 
 
 @api_router.get("/duplicates/stats")
-async def get_duplicate_stats(db: AsyncSession = Depends(get_db)):
+async def get_duplicate_stats(
+    session_id: Optional[str] = None,
+    db: AsyncSession = Depends(get_db)
+):
     """Get duplicate statistics"""
     try:
-        stats = await duplicate_service.get_duplicate_stats(db)
+        stats = await duplicate_service.get_duplicate_stats(db, session_id)
         return stats
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get duplicate stats: {str(e)}")
@@ -215,3 +245,98 @@ async def delete_file(
         return {"message": "File deleted successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to delete file: {str(e)}")
+
+
+# Scan History endpoints
+@api_router.get("/scans/history")
+async def get_scan_history(
+    db: AsyncSession = Depends(get_db)
+):
+    """Get scan history - list of all scan sessions"""
+    try:
+        from sqlalchemy import select, desc
+        
+        # Get all scan sessions ordered by most recent first
+        query = select(ScanSession).order_by(desc(ScanSession.started_at))
+        result = await db.execute(query)
+        sessions = result.scalars().all()
+        
+        # Convert to response format
+        scan_history = []
+        for session in sessions:
+            scan_history.append({
+                "id": str(session.id),
+                "directory_path": session.directory_path,
+                "status": session.status,
+                "files_processed": session.files_processed,
+                "files_total": session.files_total,
+                "duplicates_found": session.duplicates_found,
+                "progress_percentage": session.progress_percentage,
+                "started_at": session.started_at.isoformat() if session.started_at else None,
+                "completed_at": session.completed_at.isoformat() if session.completed_at else None,
+                "error_message": session.error_message
+            })
+        
+        return scan_history
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get scan history: {str(e)}")
+
+
+@api_router.get("/scans/{scan_id}")
+async def get_scan_by_id(
+    scan_id: str,
+    db: AsyncSession = Depends(get_db)
+):
+    """Get details of a specific scan session"""
+    try:
+        from sqlalchemy import select
+        import uuid
+        
+        print(f"🔍 get_scan_by_id called with scan_id: {scan_id}")
+        
+        # Convert string to UUID
+        try:
+            session_uuid = uuid.UUID(scan_id)
+            print(f"✅ Successfully converted to UUID: {session_uuid}")
+        except ValueError as e:
+            print(f"❌ Invalid UUID format: {scan_id}, error: {e}")
+            raise HTTPException(status_code=400, detail="Invalid scan ID format")
+        
+        # Get the specific scan session
+        print(f"🔍 Querying database for session: {session_uuid}")
+        query = select(ScanSession).where(ScanSession.id == session_uuid)
+        result = await db.execute(query)
+        session = result.scalar_one_or_none()
+        
+        if not session:
+            print(f"❌ Scan session not found in database: {session_uuid}")
+            raise HTTPException(status_code=404, detail="Scan session not found")
+        
+        print(f"✅ Found scan session: {session.id}, status: {session.status}")
+        
+        # Get duplicates and stats for this session
+        duplicates = await duplicate_service.get_duplicate_groups(db, scan_id)
+        stats = await duplicate_service.get_duplicate_stats(db, scan_id)
+        
+        return {
+            "scan": {
+                "id": str(session.id),
+                "directory_path": session.directory_path,
+                "status": session.status,
+                "files_processed": session.files_processed,
+                "files_total": session.files_total,
+                "duplicates_found": session.duplicates_found,
+                "progress_percentage": session.progress_percentage,
+                "started_at": session.started_at.isoformat() if session.started_at else None,
+                "completed_at": session.completed_at.isoformat() if session.completed_at else None,
+                "error_message": session.error_message
+            },
+            "duplicates": duplicates,
+            "stats": stats
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get scan details: {str(e)}")

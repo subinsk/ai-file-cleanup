@@ -52,10 +52,14 @@ export const apiService = {
 
   // Scan operations
   async startScan(directoryPath: string) {
-    const response = await api.post('/api/scan/start', {
+    console.log('🔍 apiService.startScan called with:', directoryPath);
+    const requestData = {
       directory_path: directoryPath,
       include_subdirectories: true
-    });
+    };
+    console.log('🔍 Making POST request to /api/scan/start with:', requestData);
+    const response = await api.post('/api/scan/start', requestData);
+    console.log('✅ startScan response:', response.data);
     return response.data;
   },
 
@@ -83,8 +87,9 @@ export const apiService = {
     return response.data;
   },
 
-  async getDuplicateStats() {
-    const response = await api.get('/api/duplicates/stats');
+  async getDuplicateStats(sessionId?: string) {
+    const params = sessionId ? { session_id: sessionId } : {};
+    const response = await api.get('/api/duplicates/stats', { params });
     return response.data;
   },
 
@@ -109,6 +114,20 @@ export const apiService = {
 
   async deleteFile(fileId: string) {
     const response = await api.delete(`/api/files/${fileId}`);
+    return response.data;
+  },
+
+  // Scan history
+  async getScanHistory() {
+    const response = await api.get('/api/scans/history');
+    return response.data;
+  },
+
+  async getScanById(scanId: string) {
+    console.log('🔍 apiService.getScanById called with scanId:', scanId);
+    console.log('🔍 Making request to:', `/api/scans/${scanId}`);
+    const response = await api.get(`/api/scans/${scanId}`);
+    console.log('✅ API response:', response.data);
     return response.data;
   }
 };

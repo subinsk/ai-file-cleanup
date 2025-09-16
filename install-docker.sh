@@ -40,3 +40,4 @@ echo
 echo "To stop the services, run: docker-compose down"
 echo "To view logs, run: docker-compose logs -f"
 echo
+

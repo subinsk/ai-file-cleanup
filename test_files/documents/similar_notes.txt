@@ -1,0 +1,18 @@
+Meeting Notes - Project Planning
+
+Date: 2024-01-15
+Attendees: John, Sarah, Mike
+
+Agenda:
+1. Review project requirements
+2. Discuss timeline
+3. Assign tasks
+
+Action Items:
+- John: Set up development environment
+- Sarah: Create UI mockups
+- Mike: Research AI models
+
+Next meeting: Friday 2 PM
+
+Note: This is a similar but not identical file for testing similarity detection.

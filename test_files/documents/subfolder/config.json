@@ -1,0 +1,14 @@
+{
+  "app_name": "AI File Management System",
+  "version": "1.0.0",
+  "settings": {
+    "max_file_size": 104857600,
+    "enable_gpu": false,
+    "scan_recursive": true
+  },
+  "features": [
+    "duplicate_detection",
+    "file_classification",
+    "cleanup_operations"
+  ]
+}

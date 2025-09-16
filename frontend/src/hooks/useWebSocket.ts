@@ -11,9 +11,11 @@ interface UseWebSocketReturn {
   isConnected: boolean;
   sendMessage: (message: string) => void;
   lastMessage: WebSocketMessage | null;
+  connect: (sessionId: string) => void;
+  disconnect: () => void;
 }
 
-export const useWebSocket = (url: string): UseWebSocketReturn => {
+export const useWebSocket = (baseUrl: string = 'ws://localhost:8000'): UseWebSocketReturn => {
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null);
@@ -21,13 +23,20 @@ export const useWebSocket = (url: string): UseWebSocketReturn => {
   const reconnectAttempts = useRef(0);
   const maxReconnectAttempts = 5;
   const reconnectDelay = 3000;
+  const currentSessionId = useRef<string | null>(null);
 
-  const connect = useCallback(() => {
+  const connect = useCallback((sessionId: string) => {
     try {
-      const ws = new WebSocket(url);
+      // Close existing connection if any
+      if (socket) {
+        socket.close(1000, 'Connecting to new session');
+      }
+
+      currentSessionId.current = sessionId;
+      const ws = new WebSocket(`${baseUrl}/ws/${sessionId}`);
       
       ws.onopen = () => {
-        console.log('WebSocket connected');
+        console.log(`WebSocket connected for session: ${sessionId}`);
         setIsConnected(true);
         reconnectAttempts.current = 0;
         
@@ -53,13 +62,13 @@ export const useWebSocket = (url: string): UseWebSocketReturn => {
         setIsConnected(false);
         setSocket(null);
 
-        // Attempt to reconnect if not a manual close
-        if (event.code !== 1000 && reconnectAttempts.current < maxReconnectAttempts) {
+        // Attempt to reconnect if not a manual close and we have a session ID
+        if (event.code !== 1000 && reconnectAttempts.current < maxReconnectAttempts && currentSessionId.current) {
           reconnectAttempts.current += 1;
           console.log(`Attempting to reconnect (${reconnectAttempts.current}/${maxReconnectAttempts})...`);
           
           reconnectTimeoutRef.current = setTimeout(() => {
-            connect();
+            connect(currentSessionId.current!);
           }, reconnectDelay * reconnectAttempts.current);
         }
       };
@@ -74,7 +83,20 @@ export const useWebSocket = (url: string): UseWebSocketReturn => {
       console.error('Error creating WebSocket connection:', error);
       setIsConnected(false);
     }
-  }, [url]);
+  }, [baseUrl, socket]);
+
+  const disconnect = useCallback(() => {
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+    if (socket) {
+      socket.close(1000, 'Manual disconnect');
+    }
+    currentSessionId.current = null;
+    setIsConnected(false);
+    setSocket(null);
+  }, [socket]);
 
   const sendMessage = useCallback((message: string) => {
     if (socket && socket.readyState === WebSocket.OPEN) {
@@ -84,32 +106,19 @@ export const useWebSocket = (url: string): UseWebSocketReturn => {
     }
   }, [socket]);
 
+  // Cleanup on unmount
   useEffect(() => {
-    connect();
-
-    // Cleanup on unmount
     return () => {
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-      }
-      if (socket) {
-        socket.close(1000, 'Component unmounting');
-      }
+      disconnect();
     };
-  }, [connect]);
-
-  // Cleanup on URL change
-  useEffect(() => {
-    if (socket) {
-      socket.close(1000, 'URL changed');
-    }
-    connect();
-  }, [url, connect]);
+  }, []); // Remove disconnect from dependencies to prevent infinite loop
 
   return {
     socket,
     isConnected,
     sendMessage,
-    lastMessage
+    lastMessage,
+    connect,
+    disconnect
   };
 };

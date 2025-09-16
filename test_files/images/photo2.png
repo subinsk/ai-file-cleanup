@@ -1,0 +1,4 @@
+FAKE_IMAGE_DATA_2
+This is another simulated image file for testing.
+Different content from photo1.jpg to test duplicate detection.
+This should NOT be detected as a duplicate of photo1.jpg.

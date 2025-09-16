@@ -35,3 +35,4 @@ Pillow>=10.0.0
 
 # Development
 pytest>=7.4.0
+

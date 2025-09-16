@@ -2,9 +2,10 @@
 File model for storing file metadata
 """
 
-from sqlalchemy import Column, String, BigInteger, DateTime, Text, Float
+from sqlalchemy import Column, String, BigInteger, DateTime, Text, Float, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 import uuid
 
 from app.core.database import Base
@@ -27,9 +28,13 @@ class File(Base):
     content_hash = Column(String(64), nullable=True, index=True)     # For content similarity
     confidence_score = Column(Float, nullable=True)  # ML classification confidence
     is_duplicate = Column(String(10), default="false")  # "true", "false", "unknown"
+    scan_session_id = Column(UUID(as_uuid=True), ForeignKey("scan_sessions.id"), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     modified_at = Column(DateTime(timezone=True), onupdate=func.now())
     scanned_at = Column(DateTime(timezone=True), nullable=True)
+    
+    # Relationships
+    scan_session = relationship("ScanSession", back_populates="files")
     
     def __repr__(self):
         return f"<File(id={self.id}, name='{self.name}', path='{self.path}')>"
