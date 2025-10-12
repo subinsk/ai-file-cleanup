@@ -17,30 +17,25 @@ pnpm build
 pnpm dev
 ```
 
-### 🌐 Deploy to Production (15 minutes)
+### 🌐 Deploy to Production
 
-**Stack:** Python (Render) + Next.js (Vercel) + PostgreSQL (Neon)
+**Recommended Stack:** Python (Render) + Next.js (Vercel) + PostgreSQL (Neon)
 
-```bash
-# 1. Database: Neon.tech (2 min)
-# 2. ML Service: Render.com (5 min)
-# 3. API Service: Render.com (5 min)
-# 4. Web App: Vercel.com (3 min)
-```
+**📖 Full deployment guide: Visit `/docs` page in the web app or see [packages/docs/06-deployment.md](./packages/docs/06-deployment.md)**
 
-**📖 See [QUICK_DEPLOY.md](./QUICK_DEPLOY.md) for step-by-step guide**
-
-**Total Cost: $0/month** ✅
+**Total Cost:** Free tier available | ~$53/month for production
 
 ## 📚 Documentation
 
-All project documentation is organized in the `/docs` folder:
+Access comprehensive documentation at `http://localhost:3000/docs` or browse markdown files:
 
-- **[Getting Started](./GETTING_STARTED.md)** - Quick start guide
-- **[Architecture](./docs/ARCHITECTURE.md)** - System architecture overview
-- **[Deployment Guide](./docs/DEPLOYMENT_GUIDE.md)** - Free deployment options
-- **[Setup Guide](./SETUP_GUIDE.md)** - Detailed setup instructions
-- **[Implementation Plan](./docs/PROJECT_IMPLEMENTATION_PLAN.md)** - Development roadmap
+- **[Architecture](./packages/docs/00-architecture.md)** - System overview and design
+- **[Prerequisites](./packages/docs/01-prerequisites.md)** - Required software
+- **[Installation](./packages/docs/02-installation.md)** - Setup instructions
+- **[Environment Setup](./packages/docs/03-environment-setup.md)** - Configuration
+- **[Database Setup](./packages/docs/04-database-setup.md)** - PostgreSQL + pgvector
+- **[Running Project](./packages/docs/05-running-project.md)** - Start development
+- **[Deployment](./packages/docs/06-deployment.md)** - Production deployment
 
 ## 🏗️ Project Structure
 

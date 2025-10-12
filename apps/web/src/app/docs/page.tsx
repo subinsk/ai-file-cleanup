@@ -21,6 +21,7 @@ const docs: DocFile[] = [
   { name: '03-environment-setup', title: 'Environment Setup', order: 3 },
   { name: '04-database-setup', title: 'Database Setup', order: 4 },
   { name: '05-running-project', title: 'Running Project', order: 5 },
+  { name: '06-deployment', title: 'Deployment', order: 6 },
 ];
 
 export default function DocsPage() {

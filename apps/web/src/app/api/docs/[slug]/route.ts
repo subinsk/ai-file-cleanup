@@ -14,6 +14,7 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
       '03-environment-setup',
       '04-database-setup',
       '05-running-project',
+      '06-deployment',
       'README',
     ];
 

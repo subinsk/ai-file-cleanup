@@ -414,3 +414,4 @@ Local Machine
 - [Environment Setup](./03-environment-setup.md)
 - [Database Setup](./04-database-setup.md)
 - [Running Project](./05-running-project.md)
+- [Deployment Guide](./06-deployment.md)
