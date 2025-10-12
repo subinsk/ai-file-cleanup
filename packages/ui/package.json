@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "main": "./dist/index.mjs",
-  "types": "./src/index.tsx",
+  "types": "./dist/index.d.mts",
   "exports": {
     ".": {
-      "types": "./src/index.tsx",
+      "types": "./dist/index.d.mts",
       "import": "./dist/index.mjs"
     },
     "./styles.css": "./dist/styles.css"
