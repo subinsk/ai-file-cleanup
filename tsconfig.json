@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": [],
+  "references": [
+    { "path": "./packages/types" },
+    { "path": "./packages/core" },
+    { "path": "./packages/db" },
+    { "path": "./packages/ui" },
+    { "path": "./services/api" },
+    { "path": "./services/model-worker" },
+    { "path": "./apps/web" },
+    { "path": "./apps/desktop" }
+  ]
+}
+
