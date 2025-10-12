@@ -8,7 +8,7 @@ export default defineConfig({
   },
   sourcemap: true,
   clean: true,
-  external: ['react', 'react-dom', '@ai-cleanup/types'],
+  external: ['react', 'react-dom'],
   splitting: false,
   treeshake: true,
   skipNodeModulesBundle: true,
