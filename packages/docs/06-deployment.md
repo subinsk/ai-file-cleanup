@@ -357,19 +357,27 @@ Neon automatically backs up your database. To restore:
 **Solution:**
 This happens when Prisma tries to install Node.js dependencies in a Python-only environment.
 
-**Fixed in latest code!** The scripts now handle this automatically. Just:
+**✅ Fixed in latest code!** The startup script now:
 
-1. Push the latest code to GitHub
-2. Redeploy on Render
-3. The Prisma client will generate on first startup
+1. Generates Prisma client BEFORE importing any modules
+2. Handles Python-only environments gracefully
+3. Shows clear status messages
 
-**Alternative:** If still failing, update Build Command to:
+**Just push and redeploy:**
 
 ```bash
-pip install -r requirements.txt
+git add .
+git commit -m "Fix Prisma generation for Render"
+git push origin main
 ```
 
-(Remove any `&& python generate_prisma.py` part)
+Render will auto-deploy and you should see:
+
+```
+📦 Checking Prisma client...
+✅ Prisma client generated successfully!
+🚀 Starting server on port 10000...
+```
 
 ### API Service Won't Start
 
