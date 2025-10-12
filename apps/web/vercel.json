@@ -6,11 +6,11 @@
   "outputDirectory": ".next",
   "regions": ["iad1"],
   "env": {
-    "NEXT_PUBLIC_API_URL": "@api-url"
+    "NEXT_PUBLIC_API_URL": "https://ai-file-cleanup-api.onrender.com"
   },
   "build": {
     "env": {
-      "NEXT_PUBLIC_API_URL": "@api-url"
+      "NEXT_PUBLIC_API_URL": "https://ai-file-cleanup-api.onrender.com"
     }
   }
 }
