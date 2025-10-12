@@ -98,7 +98,7 @@ migrations/
    - **Branch:** `main`
    - **Root Directory:** `services/api`
    - **Runtime:** `Python 3`
-   - **Build Command:** `pip install -r requirements.txt`
+   - **Build Command:** `chmod +x build.sh && ./build.sh`
    - **Start Command:** `python run.py`
    - **Instance Type:** `Free` (or `Starter` for better performance)
 
