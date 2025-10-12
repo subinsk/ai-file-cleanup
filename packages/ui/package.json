@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "main": "./dist/index.mjs",
-  "types": "./dist/index.d.mts",
+  "types": "./src/index.tsx",
   "exports": {
     ".": {
-      "types": "./dist/index.d.mts",
+      "types": "./src/index.tsx",
       "import": "./dist/index.mjs"
     },
     "./styles.css": "./dist/styles.css"
@@ -50,4 +50,3 @@
     "react-dom": "^18.2.0"
   }
 }
-
