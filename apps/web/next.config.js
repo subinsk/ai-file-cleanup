@@ -1,11 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  transpilePackages: ['@ai-cleanup/ui', '@ai-cleanup/types'],
-  experimental: {
-    optimizePackageImports: ['@ai-cleanup/ui'],
+  transpilePackages: ['@ai-cleanup/types', '@ai-cleanup/ui'],
+  images: {
+    domains: [],
   },
 };
 
 module.exports = nextConfig;
-

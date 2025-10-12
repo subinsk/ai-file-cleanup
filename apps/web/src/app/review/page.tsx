@@ -13,7 +13,6 @@ import {
   Badge,
   LoadingSpinner,
 } from '@ai-cleanup/ui';
-import { Header } from '@/components/header';
 import { useUploadStore } from '@/lib/store';
 import { apiClient } from '@/lib/api-client';
 import type { DedupeGroup } from '@ai-cleanup/types';
@@ -22,7 +21,8 @@ import { formatBytes } from '@ai-cleanup/ui';
 
 export default function ReviewPage() {
   const router = useRouter();
-  const { uploadId, selectedFiles, toggleFileSelection, selectAll, deselectAll, reset } = useUploadStore();
+  const { uploadId, selectedFiles, toggleFileSelection, selectAll, deselectAll, reset } =
+    useUploadStore();
   const [groups, setGroups] = useState<DedupeGroup[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -73,7 +73,7 @@ export default function ReviewPage() {
     setIsDownloading(true);
     try {
       const blob = await apiClient.downloadZip(uploadId, Array.from(selectedFiles));
-      
+
       // Create download link
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -99,7 +99,6 @@ export default function ReviewPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
         <main className="container py-8">
           <div className="max-w-4xl mx-auto flex flex-col items-center justify-center py-20">
             <LoadingSpinner size="lg" />
@@ -112,7 +111,6 @@ export default function ReviewPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
       <main className="container py-8">
         <div className="max-w-6xl mx-auto space-y-6">
           {/* Header */}
@@ -129,9 +127,7 @@ export default function ReviewPage() {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Duplicate Groups
-                    </p>
+                    <p className="text-sm font-medium text-muted-foreground">Duplicate Groups</p>
                     <p className="text-2xl font-bold">{groups.length}</p>
                   </div>
                   <FileCheck className="w-8 h-8 text-muted-foreground" />
@@ -142,9 +138,7 @@ export default function ReviewPage() {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Total Duplicates
-                    </p>
+                    <p className="text-sm font-medium text-muted-foreground">Total Duplicates</p>
                     <p className="text-2xl font-bold">{totalDuplicates}</p>
                   </div>
                   <Trash2 className="w-8 h-8 text-muted-foreground" />
@@ -155,9 +149,7 @@ export default function ReviewPage() {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Space to Save
-                    </p>
+                    <p className="text-sm font-medium text-muted-foreground">Space to Save</p>
                     <p className="text-2xl font-bold">{formatBytes(totalSizeSaved)}</p>
                   </div>
                   <Download className="w-8 h-8 text-muted-foreground" />
@@ -250,8 +242,8 @@ export default function ReviewPage() {
                   <div className="space-y-2">
                     <h3 className="text-xl font-semibold">No Duplicates Found!</h3>
                     <p className="text-muted-foreground max-w-md">
-                      Great news! We didn&apos;t find any duplicate files in your upload.
-                      All files are unique.
+                      Great news! We didn&apos;t find any duplicate files in your upload. All files
+                      are unique.
                     </p>
                   </div>
                   <Button onClick={() => router.push('/upload')} className="mt-4">
@@ -266,4 +258,3 @@ export default function ReviewPage() {
     </div>
   );
 }
-

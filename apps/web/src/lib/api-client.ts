@@ -4,6 +4,9 @@ import type {
   UserPublic,
   DedupePreviewRequest,
   DedupePreviewResponse,
+  GenerateLicenseResponse,
+  ListLicensesResponse,
+  RevokeLicenseResponse,
 } from '@ai-cleanup/types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -15,10 +18,7 @@ class ApiClient {
     this.baseUrl = baseUrl;
   }
 
-  private async fetch<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
+  private async fetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     const response = await fetch(url, {
       ...options,
@@ -30,8 +30,10 @@ class ApiClient {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'An error occurred' }));
-      throw new Error(error.message || `HTTP ${response.status}`);
+      const error = await response.json().catch(() => ({
+        detail: response.statusText || 'An error occurred',
+      }));
+      throw new Error(error.detail || error.message || `HTTP ${response.status}`);
     }
 
     return response.json();
@@ -98,7 +100,23 @@ class ApiClient {
 
     return response.blob();
   }
+
+  // License Management
+  async generateLicenseKey(): Promise<GenerateLicenseResponse> {
+    return this.fetch<GenerateLicenseResponse>('/license/generate', {
+      method: 'POST',
+    });
+  }
+
+  async listLicenseKeys(): Promise<ListLicensesResponse> {
+    return this.fetch<ListLicensesResponse>('/license/list');
+  }
+
+  async revokeLicenseKey(key: string): Promise<RevokeLicenseResponse> {
+    return this.fetch<RevokeLicenseResponse>(`/license/${key}`, {
+      method: 'DELETE',
+    });
+  }
 }
 
 export const apiClient = new ApiClient(API_URL);
-

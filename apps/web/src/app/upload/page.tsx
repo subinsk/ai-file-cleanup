@@ -13,7 +13,6 @@ import {
   Progress,
   LoadingSpinner,
 } from '@ai-cleanup/ui';
-import { Header } from '@/components/header';
 import { apiClient } from '@/lib/api-client';
 import { useUploadStore } from '@/lib/store';
 import { Upload, FileIcon, CheckCircle } from 'lucide-react';
@@ -79,7 +78,6 @@ export default function UploadPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
       <main className="container py-8">
         <div className="max-w-4xl mx-auto space-y-8">
           {/* Hero Section */}
@@ -87,11 +85,10 @@ export default function UploadPage() {
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
               <Upload className="w-8 h-8 text-primary" />
             </div>
-            <h1 className="text-4xl font-bold tracking-tight">
-              Upload Your Files
-            </h1>
+            <h1 className="text-4xl font-bold tracking-tight">Upload Your Files</h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Upload your files and let our AI detect duplicates. We support images, PDFs, and text files.
+              Upload your files and let our AI detect duplicates. We support images, PDFs, and text
+              files.
             </p>
           </div>
 
@@ -167,11 +164,7 @@ export default function UploadPage() {
                   )}
                 </Button>
                 {files.length > 0 && !isUploading && (
-                  <Button
-                    variant="outline"
-                    onClick={handleClear}
-                    size="lg"
-                  >
+                  <Button variant="outline" onClick={handleClear} size="lg">
                     Clear
                   </Button>
                 )}
@@ -220,4 +213,3 @@ export default function UploadPage() {
     </div>
   );
 }
-
