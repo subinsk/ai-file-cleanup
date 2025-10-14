@@ -95,16 +95,19 @@ async def login(request: LoginRequest, response: Response):
         response.set_cookie(
             key="access_token",
             value=access_token,
-            httponly=True,
-            secure=settings.NODE_ENV == "production",
+            httponly=False,  # Allow JS access for SPA
+            secure=False,  # Set to False for local development (True in production)
             samesite="lax",
             max_age=60 * 60 * 24 * 7,  # 7 days
+            path="/",  # Ensure cookie is sent for all paths
         )
         
         logger.info(f"User logged in: {user.email}")
         
         return {
             "message": "Login successful",
+            "access_token": access_token,
+            "token_type": "bearer",
             "user": UserResponse(
                 id=user.id,
                 email=user.email,

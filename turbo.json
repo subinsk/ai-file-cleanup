@@ -1,20 +1,37 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "globalDependencies": ["**/.env.*local"],
+  "globalDependencies": ["**/.env.*local", "**/.env"],
   "pipeline": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next/**", "out/**", "build/**"]
+      "outputs": ["dist/**", ".next/**", "out/**", "build/**"],
+      "env": ["NEXT_PUBLIC_*", "VITE_*"]
+    },
+    "build:electron": {
+      "outputs": ["dist/electron/**"],
+      "cache": false
     },
     "dev": {
       "cache": false,
+      "persistent": true,
+      "dependsOn": ["^build"]
+    },
+    "dev:renderer": {
+      "cache": false,
       "persistent": true
     },
+    "dev:electron": {
+      "cache": false,
+      "persistent": true,
+      "dependsOn": ["build:electron"]
+    },
     "lint": {
-      "dependsOn": ["^lint"]
+      "dependsOn": ["^build"],
+      "outputs": []
     },
     "typecheck": {
-      "dependsOn": ["^typecheck"]
+      "dependsOn": ["^build"],
+      "outputs": []
     },
     "test": {
       "dependsOn": ["^build"],
@@ -22,7 +39,13 @@
     },
     "clean": {
       "cache": false
+    },
+    "db:generate": {
+      "cache": false,
+      "outputs": ["node_modules/@prisma/client/**", "prisma/generated/**"]
+    },
+    "db:push": {
+      "cache": false
     }
   }
 }
-

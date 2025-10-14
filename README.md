@@ -1,243 +1,203 @@
-# AI File Cleanup System
+# AI File Cleanup
 
-An intelligent file deduplication system powered by AI, featuring both web and desktop applications for managing duplicate files efficiently.
+🤖 AI-powered file deduplication system with intelligent similarity detection, available as both a web application and desktop app.
 
 ## 🚀 Quick Start
-
-### Local Development
-
-```bash
-# Install dependencies
-pnpm install
-
-# Build all packages
-pnpm build
-
-# Start development mode
-pnpm dev
-```
-
-### 🌐 Deploy to Production
-
-**Recommended Stack:** Python (Render) + Next.js (Vercel) + PostgreSQL (Neon)
-
-**📖 Full deployment guide: Visit `/docs` page in the web app or see [packages/docs/06-deployment.md](./packages/docs/06-deployment.md)**
-
-**Total Cost:** Free tier available | ~$53/month for production
-
-## 📚 Documentation
-
-Access comprehensive documentation at `http://localhost:3000/docs` or browse markdown files:
-
-- **[Architecture](./packages/docs/00-architecture.md)** - System overview and design
-- **[Prerequisites](./packages/docs/01-prerequisites.md)** - Required software
-- **[Installation](./packages/docs/02-installation.md)** - Setup instructions
-- **[Environment Setup](./packages/docs/03-environment-setup.md)** - Configuration
-- **[Database Setup](./packages/docs/04-database-setup.md)** - PostgreSQL + pgvector
-- **[Running Project](./packages/docs/05-running-project.md)** - Start development
-- **[Deployment](./packages/docs/06-deployment.md)** - Production deployment
-
-## 🏗️ Project Structure
-
-```
-ai-file-cleanup/
-├── packages/
-│   ├── types/          # TypeScript types & Zod schemas
-│   ├── core/           # Deduplication algorithms
-│   ├── db/             # Database layer (Prisma + pgvector)
-│   └── ui/             # Shared UI components
-├── services/
-│   ├── api/            # REST API (Fastify, Node.js)
-│   └── ml-service/     # AI inference service (FastAPI, Python)
-├── apps/
-│   ├── web/            # Next.js web application
-│   └── desktop/        # Electron desktop application
-├── docs/               # Project documentation
-└── diagrams/           # UML diagrams
-```
-
-## ✨ Features
-
-### Web Application
-
-- 🔐 User authentication with license key management
-- 📤 File upload and processing
-- 🔍 AI-powered duplicate detection
-- 🎨 Modern UI with Tailwind CSS
-- 📊 Visual duplicate review interface
-
-### Desktop Application
-
-- 🗂️ Local directory scanning
-- 🖼️ Image, PDF, and text file analysis
-- 🤖 AI-based similarity detection
-- ♻️ Safe file cleanup (moves to recycle bin)
-- 🔑 License key activation
-
-### Core Technology
-
-- **Database:** PostgreSQL with pgvector for vector similarity search
-- **AI Models:** Sentence Transformers (text), CLIP (images) via Python + PyTorch
-- **ML Service:** FastAPI + Transformers + PyTorch (Python)
-- **Monorepo:** TurboRepo + pnpm workspaces
-- **Type Safety:** TypeScript with Zod runtime validation
-- **CI/CD:** GitHub Actions for automated testing and builds
-
-## 🛠️ Tech Stack
-
-- **Frontend:** Next.js 14, React 18, Tailwind CSS, shadcn/ui
-- **Desktop:** Electron, Vite
-- **API:** Fastify, Node.js
-- **ML Service:** FastAPI, Python, PyTorch, Transformers
-- **Database:** PostgreSQL with pgvector extension
-- **Build:** TurboRepo, pnpm, TypeScript
-
-## 📦 Packages
-
-| Package               | Description                   | Status |
-| --------------------- | ----------------------------- | ------ |
-| `@ai-cleanup/types`   | Shared TypeScript types       | ✅     |
-| `@ai-cleanup/core`    | Deduplication algorithms      | ✅     |
-| `@ai-cleanup/db`      | Database layer                | ✅     |
-| `@ai-cleanup/ui`      | UI component library          | ✅     |
-| `@ai-cleanup/api`     | REST API service              | ✅     |
-| `ml-service`          | AI inference service (Python) | ✅     |
-| `@ai-cleanup/web`     | Web application               | ✅     |
-| `@ai-cleanup/desktop` | Desktop application           | ✅     |
-
-## 🧪 Development
-
-### Install & Build
-
-```bash
-# Install dependencies
-pnpm install
-
-# Build all packages
-pnpm build
-```
-
-### Run Individual Apps/Services
-
-```bash
-# Web application (Next.js)
-pnpm dev:web
-
-# Desktop application (Electron)
-pnpm dev:desktop
-
-# API service (Fastify)
-pnpm dev:api
-
-# Model worker (AI inference)
-pnpm dev:model-worker
-
-# Run all services (TurboRepo parallel mode)
-pnpm dev
-```
-
-### Database Commands
-
-```bash
-# Generate Prisma client
-pnpm db:generate
-
-# Push schema to database
-pnpm db:push
-
-# Seed test data
-pnpm db:seed
-
-# Open Prisma Studio (GUI)
-pnpm db:studio
-```
-
-### Code Quality
-
-```bash
-# Lint code
-pnpm lint
-
-# Type check
-pnpm typecheck
-
-# Format code
-pnpm format
-
-# Check formatting
-pnpm format:check
-```
-
-## 🚀 Running the Application
 
 ### Prerequisites
 
 - Node.js 18+
+- Python 3.10+
+- PostgreSQL 14+
 - pnpm 8+
-- PostgreSQL with pgvector extension
 
-### Setup Database
-
-```bash
-# Generate Prisma client
-pnpm db:generate
-
-# Push schema to database
-pnpm db:push
-
-# Seed test data
-pnpm db:seed
-```
-
-### Start Services
+### One Command Setup
 
 ```bash
-# Terminal 1 - API Service
-pnpm dev:api
+# Install pnpm if you haven't
+npm install -g pnpm
 
-# Terminal 2 - Model Worker
-pnpm dev:model-worker
+# Clone and setup
+git clone <your-repo-url>
+cd ai-file-cleanup
 
-# Terminal 3 - Web App
-pnpm dev:web
-
-# Terminal 4 - Desktop App (optional)
-pnpm dev:desktop
+# Setup everything and start development
+pnpm dev
 ```
 
-### Access Applications
+That's it! This will:
 
-- **Web App:** http://localhost:3000
-- **API:** http://localhost:3001
-- **ML Service:** http://localhost:3002
-- **API Docs (ML):** http://localhost:3002/docs
+- Install all dependencies
+- Setup environment files
+- Build all packages
+- Start API server, Desktop app, and Web app
 
-### Test Credentials
+## 📖 Documentation
 
+- **[Development Guide](DEV-GUIDE.md)** - Complete development workflow
+- **[Environment Setup](ENVIRONMENT-SETUP.md)** - Configuration guide
+- **[Start Dev Servers](START-DEV-SERVERS.md)** - Manual server startup
+- **[Desktop App Setup](apps/desktop/ENV-SETUP.md)** - Desktop-specific guide
+
+## 🏗️ Architecture
+
+### Applications
+
+- **🖥️ Desktop App** - Electron-based desktop application
+- **🌐 Web App** - Next.js web application
+- **🔌 API Service** - FastAPI backend
+- **🤖 ML Service** - Machine learning model service
+
+### Packages
+
+- **@ai-cleanup/types** - Shared TypeScript types
+- **@ai-cleanup/core** - Core deduplication logic
+- **@ai-cleanup/db** - Prisma database layer
+- **@ai-cleanup/ui** - Shared UI components
+
+## 🎯 Features
+
+- ✨ AI-powered duplicate detection
+- 🖼️ Image similarity analysis
+- 📄 PDF content comparison
+- 📝 Text file deduplication
+- 🎨 Beautiful modern UI
+- 🔐 User authentication
+- 📊 Visual grouping of duplicates
+- 🗑️ Safe file deletion (to trash)
+- 💾 Desktop and cloud options
+
+## 🛠️ Development
+
+### Start Everything
+
+```bash
+pnpm dev
 ```
-Email: test@example.com
-Password: password123
+
+### Individual Services
+
+```bash
+pnpm dev:desktop-only    # API + Desktop
+pnpm dev:web             # Web app only
+pnpm dev:api             # API only
 ```
 
-## 📊 Project Status
+### Database
 
-✅ **Foundation Complete** (Oct 12, 2025)
+```bash
+pnpm db:push             # Push schema
+pnpm db:migrate          # Create migration
+pnpm db:seed             # Seed data
+pnpm db:studio           # Open Prisma Studio
+```
 
-- All 11 foundation tasks completed
-- License management system implemented
-- GitHub Actions CI/CD configured
-- All packages building successfully
+### Build
 
-See [Foundation Complete](./docs/FOUNDATION_COMPLETE.md) for detailed status.
+```bash
+pnpm build               # Build everything
+pnpm build:desktop       # Desktop app
+pnpm build:web           # Web app
+```
 
-## 📄 License
+## 📦 Tech Stack
 
-[Add your license here]
+### Frontend
+
+- React 18
+- TypeScript
+- Tailwind CSS
+- Radix UI
+- Zustand
+
+### Desktop
+
+- Electron 28
+- Vite
+
+### Web
+
+- Next.js 14
+- NextAuth.js
+
+### Backend
+
+- FastAPI
+- Python 3.10+
+- PostgreSQL
+- Prisma
+
+### ML/AI
+
+- TensorFlow
+- CLIP
+- Sentence Transformers
+
+## 🚢 Deployment
+
+### Desktop App
+
+```bash
+cd apps/desktop
+pnpm build
+pnpm package:win  # or :mac, :linux
+```
+
+### Web App
+
+```bash
+cd apps/web
+pnpm build
+# Deploy to Vercel or Netlify
+```
+
+### API Service
+
+Deploy to Railway, Render, or any Python hosting service.
+
+## 🧪 Testing
+
+```bash
+pnpm test
+pnpm typecheck
+pnpm lint
+```
+
+## 📝 Environment Variables
+
+See [ENVIRONMENT-SETUP.md](ENVIRONMENT-SETUP.md) for detailed configuration.
+
+Quick setup:
+
+```bash
+# Root
+cp env.example .env
+
+# Web
+cp apps/web/env.example apps/web/.env.local
+
+# Desktop
+cp apps/desktop/env.example apps/desktop/.env
+```
 
 ## 🤝 Contributing
 
-[Add contribution guidelines here]
+1. Fork the repository
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Open a Pull Request
+
+## 📄 License
+
+[Your License Here]
+
+## 🆘 Support
+
+- **Issues:** [GitHub Issues](your-repo-url/issues)
+- **Docs:** Check the `/docs` folder
+- **API Docs:** http://localhost:3001/docs (when running)
 
 ---
 
-**Built with ❤️ using modern web technologies**
+Made with ❤️ by [Your Name]

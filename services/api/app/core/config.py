@@ -1,7 +1,8 @@
 """Configuration settings optimized for Render deployment"""
 import os
-from typing import List
+from typing import List, Union
 from pydantic_settings import BaseSettings
+from pydantic import field_validator
 
 
 class Settings(BaseSettings):
@@ -22,13 +23,17 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRATION_MINUTES: int = 10080  # 7 days
     
-    # CORS - Allow Vercel domains
-    CORS_ORIGINS: List[str] = [
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "https://*.vercel.app",
-    ]
+    # CORS - Allow Vercel domains and local development
+    CORS_ORIGINS: Union[List[str], str] = "http://localhost:3000,http://localhost:3000,http://localhost:5173,http://localhost:5173"
     ALLOWED_HOSTS: List[str] = ["*"]
+    
+    @field_validator('CORS_ORIGINS', mode='before')
+    @classmethod
+    def parse_cors_origins(cls, v):
+        """Parse CORS_ORIGINS from comma-separated string or list"""
+        if isinstance(v, str):
+            return [origin.strip() for origin in v.split(',')]
+        return v
     
     # File Upload
     MAX_FILE_SIZE_MB: int = 10
@@ -52,6 +57,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = True
+        extra = "ignore"  # Ignore extra fields from .env that aren't in Settings
 
 
 settings = Settings()

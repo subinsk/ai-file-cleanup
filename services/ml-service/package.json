@@ -1,0 +1,11 @@
+{
+  "name": "@ai-cleanup/ml-service",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Python ML service for embeddings",
+  "scripts": {
+    "dev": "venv\\Scripts\\python.exe run.py",
+    "start": "venv\\Scripts\\python.exe run.py",
+    "install:deps": "venv\\Scripts\\pip.exe install -r requirements.txt"
+  }
+}

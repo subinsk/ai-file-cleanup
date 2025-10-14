@@ -23,7 +23,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // First, login to Python API to get the access_token cookie
+      // First, login to Python API to get the access_token
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
       const apiResponse = await fetch(`${apiUrl}/auth/login`, {
         method: 'POST',
@@ -38,6 +38,12 @@ export default function LoginPage() {
         setError('Invalid email or password');
         setLoading(false);
         return;
+      }
+
+      // Store the access token in localStorage for API requests
+      const apiData = await apiResponse.json();
+      if (apiData.access_token) {
+        localStorage.setItem('api_access_token', apiData.access_token);
       }
 
       // Then sign in with NextAuth

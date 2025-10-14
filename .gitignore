@@ -225,3 +225,7 @@ tramp
 # Local development
 local/
 local_settings.py
+
+# Turborepo
+.turbo
+.turbo/config.json

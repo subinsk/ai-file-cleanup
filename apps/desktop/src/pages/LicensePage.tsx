@@ -37,7 +37,7 @@ export default function LicensePage({ onValidated }: LicensePageProps) {
 
       if (result.valid) {
         setSuccess(true);
-        setLicense(licenseKey.trim(), true, result.user);
+        setLicense(licenseKey.trim(), true);
         setTimeout(() => {
           onValidated();
         }, 1000);
@@ -58,9 +58,7 @@ export default function LicensePage({ onValidated }: LicensePageProps) {
           <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center mb-4">
             <Key className="h-8 w-8 text-primary-foreground" />
           </div>
-          <CardTitle className="text-2xl font-bold text-center">
-            AI File Cleanup
-          </CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">AI File Cleanup</CardTitle>
           <CardDescription className="text-center">
             Enter your license key to activate the application
           </CardDescription>
@@ -124,4 +122,3 @@ export default function LicensePage({ onValidated }: LicensePageProps) {
     </div>
   );
 }
-

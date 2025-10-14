@@ -1,0 +1,27 @@
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Dependencies
+node_modules/
+
+# Cache directories
+.turbo/
+.cache/
+
+# Config files
+*.config.js
+*.config.ts
+
+# Root-level Node.js scripts (CommonJS)
+dev-setup.js
+wait-for-api.js
+
+# Python services
+services/
+
+# Generated files
+*.d.ts
+

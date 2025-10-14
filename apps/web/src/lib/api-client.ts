@@ -20,13 +20,25 @@ class ApiClient {
 
   private async fetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
+
+    // Get access token from localStorage
+    const accessToken =
+      typeof window !== 'undefined' ? localStorage.getItem('api_access_token') : null;
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(options.headers as Record<string, string>),
+    };
+
+    // Add Authorization header if token exists
+    if (accessToken) {
+      headers['Authorization'] = `Bearer ${accessToken}`;
+    }
+
     const response = await fetch(url, {
       ...options,
       credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
+      headers,
     });
 
     if (!response.ok) {
@@ -49,6 +61,10 @@ class ApiClient {
 
   async logout(): Promise<void> {
     await this.fetch('/auth/logout', { method: 'POST' });
+    // Clear stored token
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('api_access_token');
+    }
   }
 
   async getCurrentUser(): Promise<UserPublic> {
@@ -62,9 +78,18 @@ class ApiClient {
       formData.append('files', file);
     });
 
+    // Get access token for multipart request
+    const accessToken =
+      typeof window !== 'undefined' ? localStorage.getItem('api_access_token') : null;
+    const headers: Record<string, string> = {};
+    if (accessToken) {
+      headers['Authorization'] = `Bearer ${accessToken}`;
+    }
+
     const response = await fetch(`${this.baseUrl}/dedupe/preview`, {
       method: 'POST',
       credentials: 'include',
+      headers,
       body: formData,
     });
 
@@ -85,12 +110,19 @@ class ApiClient {
   }
 
   async downloadZip(uploadId: string, fileIds: string[]): Promise<Blob> {
+    const accessToken =
+      typeof window !== 'undefined' ? localStorage.getItem('api_access_token') : null;
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (accessToken) {
+      headers['Authorization'] = `Bearer ${accessToken}`;
+    }
+
     const response = await fetch(`${this.baseUrl}/dedupe/zip`, {
       method: 'POST',
       credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({ uploadId, fileIds }),
     });
 

@@ -10,7 +10,7 @@ import {
   LoadingSpinner,
   Progress,
 } from '@ai-cleanup/ui';
-import { useScanStore, useLicenseStore } from '../lib/store';
+import { useScanStore, useAuthStore, useLicenseStore } from '../lib/store';
 import { FolderOpen, Search, FileSearch, Trash2, User, LogOut } from 'lucide-react';
 import { formatBytes } from '@ai-cleanup/ui';
 
@@ -19,7 +19,8 @@ interface ScanPageProps {
 }
 
 export default function ScanPage({ onStartReview }: ScanPageProps) {
-  const { user, clearLicense } = useLicenseStore();
+  const { user, clearUser } = useAuthStore();
+  const { clearLicense } = useLicenseStore();
   const {
     directoryPath,
     files,
@@ -83,8 +84,8 @@ export default function ScanPage({ onStartReview }: ScanPageProps) {
     try {
       // For MVP, we'll create mock groups
       // In production, this would call the API with file hashes/embeddings
-      const mockGroups: any[] = [];
-      
+      const mockGroups: DedupeGroup[] = [];
+
       setGroups(mockGroups);
       onStartReview();
     } catch (err) {
@@ -96,7 +97,10 @@ export default function ScanPage({ onStartReview }: ScanPageProps) {
 
   const handleLogout = () => {
     reset();
+    clearUser();
     clearLicense();
+    // Force reload to go back to login page
+    window.location.reload();
   };
 
   const totalSize = files.reduce((sum, f) => sum + f.size, 0);
@@ -133,11 +137,10 @@ export default function ScanPage({ onStartReview }: ScanPageProps) {
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
               <FolderOpen className="w-8 h-8 text-primary" />
             </div>
-            <h1 className="text-4xl font-bold tracking-tight">
-              Scan Local Directory
-            </h1>
+            <h1 className="text-4xl font-bold tracking-tight">Scan Local Directory</h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Select a folder to scan for duplicate files. We&apos;ll analyze images, PDFs, and text files.
+              Select a folder to scan for duplicate files. We&apos;ll analyze images, PDFs, and text
+              files.
             </p>
           </div>
 
@@ -145,9 +148,7 @@ export default function ScanPage({ onStartReview }: ScanPageProps) {
           <Card>
             <CardHeader>
               <CardTitle>Select Directory</CardTitle>
-              <CardDescription>
-                Choose a folder to scan for duplicate files
-              </CardDescription>
+              <CardDescription>Choose a folder to scan for duplicate files</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex gap-3">
@@ -210,9 +211,7 @@ export default function ScanPage({ onStartReview }: ScanPageProps) {
                   <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium text-muted-foreground">
-                          Files Found
-                        </p>
+                        <p className="text-sm font-medium text-muted-foreground">Files Found</p>
                         <p className="text-2xl font-bold">{files.length}</p>
                       </div>
                       <FileSearch className="w-8 h-8 text-muted-foreground" />
@@ -223,9 +222,7 @@ export default function ScanPage({ onStartReview }: ScanPageProps) {
                   <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium text-muted-foreground">
-                          Total Size
-                        </p>
+                        <p className="text-sm font-medium text-muted-foreground">Total Size</p>
                         <p className="text-2xl font-bold">{formatBytes(totalSize)}</p>
                       </div>
                       <Trash2 className="w-8 h-8 text-muted-foreground" />
@@ -236,9 +233,7 @@ export default function ScanPage({ onStartReview }: ScanPageProps) {
                   <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium text-muted-foreground">
-                          Status
-                        </p>
+                        <p className="text-sm font-medium text-muted-foreground">Status</p>
                         <Badge variant="secondary" className="mt-1">
                           Ready to Analyze
                         </Badge>
@@ -283,4 +278,3 @@ export default function ScanPage({ onStartReview }: ScanPageProps) {
     </div>
   );
 }
-

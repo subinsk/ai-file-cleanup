@@ -2,25 +2,57 @@ import { create } from 'zustand';
 import type { DedupeGroup } from '@ai-cleanup/types';
 import type { FileInfo } from '../types/electron';
 
+interface User {
+  id: string;
+  email: string;
+  name?: string;
+}
+
+interface AuthState {
+  user: User | null;
+  isAuthenticated: boolean;
+  accessToken: string | null;
+  setUser: (user: User, token?: string) => void;
+  clearUser: () => void;
+}
+
+export const useAuthStore = create<AuthState>((set) => ({
+  user: JSON.parse(localStorage.getItem('user') || 'null'),
+  accessToken: localStorage.getItem('accessToken'),
+  isAuthenticated: !!localStorage.getItem('user'),
+  setUser: (user, token) => {
+    localStorage.setItem('user', JSON.stringify(user));
+    if (token) {
+      localStorage.setItem('accessToken', token);
+    }
+    set({ user, accessToken: token || localStorage.getItem('accessToken'), isAuthenticated: true });
+  },
+  clearUser: () => {
+    localStorage.removeItem('user');
+    localStorage.removeItem('accessToken');
+    set({ user: null, accessToken: null, isAuthenticated: false });
+  },
+}));
+
 interface LicenseState {
   licenseKey: string | null;
   isValid: boolean;
-  user: any | null;
-  setLicense: (key: string, valid: boolean, user?: any) => void;
+  setLicense: (key: string, valid: boolean) => void;
   clearLicense: () => void;
 }
 
 export const useLicenseStore = create<LicenseState>((set) => ({
   licenseKey: localStorage.getItem('licenseKey'),
-  isValid: false,
-  user: null,
-  setLicense: (key, valid, user) => {
+  isValid: localStorage.getItem('licenseValid') === 'true',
+  setLicense: (key, valid) => {
     localStorage.setItem('licenseKey', key);
-    set({ licenseKey: key, isValid: valid, user });
+    localStorage.setItem('licenseValid', String(valid));
+    set({ licenseKey: key, isValid: valid });
   },
   clearLicense: () => {
     localStorage.removeItem('licenseKey');
-    set({ licenseKey: null, isValid: false, user: null });
+    localStorage.removeItem('licenseValid');
+    set({ licenseKey: null, isValid: false });
   },
 }));
 
@@ -68,4 +100,3 @@ export const useScanStore = create<ScanState>((set) => ({
   setAnalyzing: (analyzing) => set({ isAnalyzing: analyzing }),
   reset: () => set({ directoryPath: null, files: [], groups: [], selectedFiles: new Set() }),
 }));
-

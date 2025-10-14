@@ -11,10 +11,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   readFile: (path: string) => ipcRenderer.invoke('files:readFile', path),
   moveToTrash: (paths: string[]) => ipcRenderer.invoke('files:moveToTrash', paths),
 
+  // Auth
+  login: (email: string, password: string) => ipcRenderer.invoke('auth:login', email, password),
+  signup: (name: string, email: string, password: string) =>
+    ipcRenderer.invoke('auth:signup', name, email, password),
+
   // License
   validateLicense: (key: string) => ipcRenderer.invoke('license:validate', key),
 
   // Dedupe
-  getDedupePreview: (data: any) => ipcRenderer.invoke('dedupe:preview', data),
+  getDedupePreview: (data: Record<string, unknown>) => ipcRenderer.invoke('dedupe:preview', data),
 });
-
