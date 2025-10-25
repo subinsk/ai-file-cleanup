@@ -58,7 +58,12 @@ const AccordionContent = React.forwardRef<
 ));
 AccordionContent.displayName = AccordionPrimitive.Content.displayName;
 
-export function GroupAccordion({ groups, selectedFiles = new Set(), onFileSelect, className }: GroupAccordionProps) {
+export function GroupAccordion({
+  groups,
+  selectedFiles = new Set(),
+  onFileSelect,
+  className,
+}: GroupAccordionProps) {
   if (groups.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
@@ -70,12 +75,22 @@ export function GroupAccordion({ groups, selectedFiles = new Set(), onFileSelect
   return (
     <Accordion type="multiple" className={cn('w-full', className)}>
       {groups.map((group) => {
-        const allFiles = [group.keepFile, ...group.duplicates.map((d) => d.file)];
-        const totalSize = allFiles.reduce((sum, file) => sum + file.sizeBytes, 0);
+        // Safely handle potentially undefined files
+        const allFiles = [group.keepFile, ...group.duplicates.map((d) => d.file)].filter(
+          (file): file is NonNullable<typeof file> => file != null
+        );
+
+        const totalSize = allFiles.reduce((sum, file) => sum + (file.sizeBytes || 0), 0);
         const avgSimilarity =
           group.duplicates.length > 0
             ? group.duplicates.reduce((sum, d) => sum + d.similarity, 0) / group.duplicates.length
             : 1;
+
+        // Skip rendering this group if keepFile is missing
+        if (!group.keepFile) {
+          console.error('Group missing keepFile:', group);
+          return null;
+        }
 
         return (
           <AccordionItem key={group.id} value={group.id}>
@@ -88,7 +103,9 @@ export function GroupAccordion({ groups, selectedFiles = new Set(), onFileSelect
                 <div className="text-sm text-muted-foreground">
                   <span>Total: {formatBytes(totalSize)}</span>
                   <span className="mx-2">•</span>
-                  <span className="text-destructive">Can save: {formatBytes(group.totalSizeSaved)}</span>
+                  <span className="text-destructive">
+                    Can save: {formatBytes(group.totalSizeSaved)}
+                  </span>
                 </div>
               </div>
             </AccordionTrigger>
@@ -99,24 +116,38 @@ export function GroupAccordion({ groups, selectedFiles = new Set(), onFileSelect
                   <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
                     <span className="text-green-600">✓</span> Keep this file
                   </h4>
-                  <FileCard file={group.keepFile} showCheckbox={false} className="bg-green-50 dark:bg-green-950/20" />
+                  <FileCard
+                    file={group.keepFile}
+                    showCheckbox={false}
+                    className="bg-green-50 dark:bg-green-950/20"
+                  />
                 </div>
 
                 {group.duplicates.length > 0 && (
                   <div>
                     <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
-                      <span className="text-destructive">×</span> Duplicates ({group.duplicates.length})
+                      <span className="text-destructive">×</span> Duplicates (
+                      {group.duplicates.length})
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {group.duplicates.map((duplicate) => (
-                        <FileCard
-                          key={duplicate.file.id}
-                          file={duplicate.file}
-                          selected={selectedFiles.has(duplicate.file.id)}
-                          onSelectChange={(selected) => onFileSelect?.(duplicate.file.id, selected)}
-                          className="bg-destructive/5"
-                        />
-                      ))}
+                      {group.duplicates.map((duplicate) => {
+                        // Skip if file is undefined
+                        if (!duplicate.file) {
+                          console.error('Duplicate missing file:', duplicate);
+                          return null;
+                        }
+                        return (
+                          <FileCard
+                            key={duplicate.file.id}
+                            file={duplicate.file}
+                            selected={selectedFiles.has(duplicate.file.id)}
+                            onSelectChange={(selected) =>
+                              onFileSelect?.(duplicate.file.id, selected)
+                            }
+                            className="bg-destructive/5"
+                          />
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -134,4 +165,3 @@ export function GroupAccordion({ groups, selectedFiles = new Set(), onFileSelect
     </Accordion>
   );
 }
-

@@ -17,6 +17,21 @@ if (isDev) {
 }
 
 const API_URL = process.env.VITE_API_URL || 'http://127.0.0.1:3001';
+// eslint-disable-next-line no-console
+console.log('🔧 API URL configured:', API_URL);
+
+// Enable auto-reload in development
+if (isDev) {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    require('electron-reload')(__dirname, {
+      electron: path.join(__dirname, '../../node_modules/.bin/electron'),
+      hardResetMethod: 'exit',
+    });
+  } catch (err) {
+    // Silently fail if electron-reload not available
+  }
+}
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -217,7 +232,16 @@ ipcMain.handle('license:validate', async (_, licenseKey: string) => {
 
 // Get dedupe preview
 ipcMain.handle('dedupe:preview', async (_, data: Record<string, unknown>) => {
+  // eslint-disable-next-line no-console
+  console.log('🎯 IPC Handler called: dedupe:preview');
+  // eslint-disable-next-line no-console, @typescript-eslint/no-explicit-any
+  console.log('📊 Number of files received:', data.files ? (data.files as any[]).length : 0);
   try {
+    // eslint-disable-next-line no-console
+    console.log('📡 Sending request to API:', `${API_URL}/desktop/dedupe/preview`);
+    // eslint-disable-next-line no-console
+    console.log('📦 Request data:', JSON.stringify(data, null, 2));
+
     const response = await fetch(`${API_URL}/desktop/dedupe/preview`, {
       method: 'POST',
       headers: {
@@ -226,11 +250,19 @@ ipcMain.handle('dedupe:preview', async (_, data: Record<string, unknown>) => {
       body: JSON.stringify(data),
     });
 
+    // eslint-disable-next-line no-console
+    console.log('API response status:', response.status);
+
     if (!response.ok) {
-      throw new Error('Failed to get dedupe preview');
+      const errorText = await response.text();
+      console.error('API error response:', errorText);
+      throw new Error(`Failed to get dedupe preview: ${response.status} - ${errorText}`);
     }
 
-    return await response.json();
+    const result = await response.json();
+    // eslint-disable-next-line no-console
+    console.log('API response data:', result);
+    return result;
   } catch (error) {
     console.error('Error getting dedupe preview:', error);
     throw error;

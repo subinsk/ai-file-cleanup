@@ -41,10 +41,12 @@ export function getFileExtension(filename: string): string {
 /**
  * Get file type category from MIME type
  */
-export function getFileTypeFromMime(mimeType: string): 'image' | 'pdf' | 'text' | 'other' {
+export function getFileTypeFromMime(
+  mimeType: string | undefined
+): 'image' | 'pdf' | 'text' | 'other' {
+  if (!mimeType) return 'other';
   if (mimeType.startsWith('image/')) return 'image';
   if (mimeType === 'application/pdf') return 'pdf';
   if (mimeType.startsWith('text/')) return 'text';
   return 'other';
 }
-

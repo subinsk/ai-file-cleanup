@@ -82,13 +82,61 @@ export default function ScanPage({ onStartReview }: ScanPageProps) {
     setError('');
 
     try {
-      // For MVP, we'll create mock groups
-      // In production, this would call the API with file hashes/embeddings
-      const mockGroups: DedupeGroup[] = [];
+      // Prepare file data for API
+      const fileData = files.map((file) => {
+        // Detect file type based on extension
+        const extension = file.name.split('.').pop()?.toLowerCase();
+        let mimeType = 'text/plain'; // Default
 
-      setGroups(mockGroups);
+        switch (extension) {
+          case 'txt':
+            mimeType = 'text/plain';
+            break;
+          case 'pdf':
+            mimeType = 'application/pdf';
+            break;
+          case 'jpg':
+          case 'jpeg':
+            mimeType = 'image/jpeg';
+            break;
+          case 'png':
+            mimeType = 'image/png';
+            break;
+          case 'json':
+            mimeType = 'application/json';
+            break;
+          case 'ini':
+            mimeType = 'text/plain';
+            break;
+          default:
+            mimeType = 'text/plain';
+        }
+
+        return {
+          name: file.name,
+          size: file.size,
+          type: mimeType,
+          path: file.path,
+        };
+      });
+
+      // Call the dedupe preview API
+      // eslint-disable-next-line no-console
+      console.log('🚀 Sending files to API:', fileData);
+      const result = await window.electronAPI.getDedupePreview({
+        files: fileData,
+      });
+      // eslint-disable-next-line no-console
+      console.log('✅ API response:', result);
+
+      // Set the groups from the API response
+      const groups = Array.isArray(result.groups) ? result.groups : [];
+      // eslint-disable-next-line no-console
+      console.log('📊 Groups received:', groups.length);
+      setGroups(groups);
       onStartReview();
     } catch (err) {
+      console.error('❌ Analysis failed:', err);
       setError(err instanceof Error ? err.message : 'Analysis failed');
     } finally {
       setAnalyzing(false);

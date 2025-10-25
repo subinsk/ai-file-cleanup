@@ -19,14 +19,17 @@ interface ReviewPageProps {
 }
 
 export default function ReviewPage({ onBack }: ReviewPageProps) {
-  const { groups, selectedFiles, toggleFileSelection, selectAll, deselectAll, reset } = useScanStore();
+  const { groups, selectedFiles, toggleFileSelection, selectAll, deselectAll, reset } =
+    useScanStore();
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
-  const totalDuplicates = groups.reduce((sum, g) => sum + g.duplicates.length, 0);
-  const totalSizeSaved = groups.reduce((sum, g) => sum + g.totalSizeSaved, 0);
-  const allDuplicatePaths = groups.flatMap((g) => g.duplicates.map((d) => d.file.id));
+  const totalDuplicates = groups.reduce((sum, g) => sum + (g.duplicates?.length || 0), 0);
+  const totalSizeSaved = groups.reduce((sum, g) => sum + (g.totalSizeSaved || 0), 0);
+  const allDuplicatePaths = groups.flatMap((g) =>
+    (g.duplicates || []).map((d) => d.file?.id).filter((id): id is string => id != null)
+  );
 
   const handleSelectAllDuplicates = () => {
     selectAll(allDuplicatePaths);
@@ -45,7 +48,7 @@ export default function ReviewPage({ onBack }: ReviewPageProps) {
     try {
       const filesToDelete = Array.from(selectedFiles);
       await window.electronAPI.moveToTrash(filesToDelete);
-      
+
       setSuccess(true);
       setTimeout(() => {
         reset();
@@ -87,9 +90,7 @@ export default function ReviewPage({ onBack }: ReviewPageProps) {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Duplicate Groups
-                    </p>
+                    <p className="text-sm font-medium text-muted-foreground">Duplicate Groups</p>
                     <p className="text-2xl font-bold">{groups.length}</p>
                   </div>
                   <FileCheck className="w-8 h-8 text-muted-foreground" />
@@ -100,9 +101,7 @@ export default function ReviewPage({ onBack }: ReviewPageProps) {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Total Duplicates
-                    </p>
+                    <p className="text-sm font-medium text-muted-foreground">Total Duplicates</p>
                     <p className="text-2xl font-bold">{totalDuplicates}</p>
                   </div>
                   <Trash2 className="w-8 h-8 text-muted-foreground" />
@@ -113,9 +112,7 @@ export default function ReviewPage({ onBack }: ReviewPageProps) {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Space to Save
-                    </p>
+                    <p className="text-sm font-medium text-muted-foreground">Space to Save</p>
                     <p className="text-2xl font-bold">{formatBytes(totalSizeSaved)}</p>
                   </div>
                   <Trash2 className="w-8 h-8 text-muted-foreground" />
@@ -144,9 +141,7 @@ export default function ReviewPage({ onBack }: ReviewPageProps) {
             <Card>
               <CardHeader>
                 <CardTitle>Quick Actions</CardTitle>
-                <CardDescription>
-                  Select files to move to Recycle Bin
-                </CardDescription>
+                <CardDescription>Select files to move to Recycle Bin</CardDescription>
               </CardHeader>
               <CardContent className="flex flex-wrap gap-3">
                 <Button
@@ -232,4 +227,3 @@ export default function ReviewPage({ onBack }: ReviewPageProps) {
     </div>
   );
 }
-

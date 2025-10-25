@@ -9,7 +9,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
 from app.core.config import settings
 from app.core.database import init_db, close_db
-from app.api import auth, license, dedupe, desktop, health
+from app.api import auth, license, dedupe, desktop, health, files
 
 # Configure logging
 logging.basicConfig(
@@ -63,6 +63,7 @@ app.include_router(health.router, prefix="/health", tags=["health"])
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(license.router, prefix="/license", tags=["license"])
 app.include_router(dedupe.router, prefix="/dedupe", tags=["dedupe"])
+app.include_router(files.router, prefix="/files", tags=["files"])
 app.include_router(desktop.router, prefix="/desktop", tags=["desktop"])
 
 

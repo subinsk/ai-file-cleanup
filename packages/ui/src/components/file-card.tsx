@@ -27,15 +27,39 @@ function getFileIcon(mimeType: string) {
   }
 }
 
-export function FileCard({ file, selected = false, onSelectChange, showCheckbox = true, className }: FileCardProps) {
-  const Icon = getFileIcon(file.mimeType);
-  const fileType = getFileTypeFromMime(file.mimeType);
+export function FileCard({
+  file,
+  selected = false,
+  onSelectChange,
+  showCheckbox = true,
+  className,
+}: FileCardProps) {
+  // Safely handle potentially missing file properties
+  if (!file) {
+    console.error('FileCard received undefined file');
+    return null;
+  }
+
+  const mimeType = file.mimeType || 'application/octet-stream';
+  const Icon = getFileIcon(mimeType);
+  const fileType = getFileTypeFromMime(mimeType);
+  const fileName = file.fileName || 'Unknown file';
+  const sizeBytes = file.sizeBytes || 0;
 
   return (
-    <Card className={cn('relative hover:shadow-md transition-shadow', selected && 'ring-2 ring-primary', className)}>
+    <Card
+      className={cn(
+        'relative hover:shadow-md transition-shadow',
+        selected && 'ring-2 ring-primary',
+        className
+      )}
+    >
       {showCheckbox && (
         <div className="absolute top-3 right-3 z-10">
-          <Checkbox checked={selected} onCheckedChange={(checked) => onSelectChange?.(checked as boolean)} />
+          <Checkbox
+            checked={selected}
+            onCheckedChange={(checked) => onSelectChange?.(checked as boolean)}
+          />
         </div>
       )}
 
@@ -48,11 +72,11 @@ export function FileCard({ file, selected = false, onSelectChange, showCheckbox 
           </div>
 
           <div className="flex-1 min-w-0">
-            <h3 className="font-medium text-sm truncate" title={file.fileName}>
-              {file.fileName}
+            <h3 className="font-medium text-sm truncate" title={fileName}>
+              {fileName}
             </h3>
             <div className="flex items-center gap-2 mt-1">
-              <span className="text-xs text-muted-foreground">{formatBytes(file.sizeBytes)}</span>
+              <span className="text-xs text-muted-foreground">{formatBytes(sizeBytes)}</span>
               <Badge variant="outline" className="text-xs">
                 {fileType}
               </Badge>
@@ -79,4 +103,3 @@ export function FileCard({ file, selected = false, onSelectChange, showCheckbox 
     </Card>
   );
 }
-

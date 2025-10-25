@@ -1,7 +1,7 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "globalDependencies": ["**/.env.*local", "**/.env"],
-  "pipeline": {
+  "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**", ".next/**", "out/**", "build/**"],
@@ -14,7 +14,7 @@
     "dev": {
       "cache": false,
       "persistent": true,
-      "dependsOn": ["^build"]
+      "dependsOn": ["build:electron"]
     },
     "dev:renderer": {
       "cache": false,
@@ -24,6 +24,10 @@
       "cache": false,
       "persistent": true,
       "dependsOn": ["build:electron"]
+    },
+    "watch:electron": {
+      "cache": false,
+      "persistent": true
     },
     "lint": {
       "dependsOn": ["^build"],
