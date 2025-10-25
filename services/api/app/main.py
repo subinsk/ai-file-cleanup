@@ -10,6 +10,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from app.core.config import settings
 from app.core.database import init_db, close_db
 from app.api import auth, license, dedupe, desktop, health
+from app.services.zip_service import zip_service
 
 # Configure logging
 logging.basicConfig(
@@ -26,6 +27,10 @@ async def lifespan(app: FastAPI):
     logger.info("🚀 Starting API service...")
     await init_db()
     logger.info("✅ Database initialized")
+    
+    # Initialize ZIP service
+    zip_service.upload_dir = settings.UPLOAD_DIR
+    logger.info("✅ ZIP service initialized")
     
     yield
     
