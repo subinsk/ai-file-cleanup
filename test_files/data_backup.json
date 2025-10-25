@@ -1,0 +1,23 @@
+{
+  "project": "AI File Cleanup System",
+  "version": "1.0.0",
+  "description": "AI-powered file deduplication system",
+  "features": [
+    "Text similarity detection",
+    "Image similarity detection",
+    "PDF text extraction",
+    "Perceptual hashing",
+    "Cosine similarity clustering"
+  ],
+  "technology": {
+    "backend": "Python FastAPI",
+    "database": "PostgreSQL + pgvector",
+    "ml": "PyTorch + Hugging Face",
+    "frontend": "React + Next.js + Electron"
+  },
+  "test_data": {
+    "duplicate_files": 5,
+    "similar_files": 3,
+    "unique_files": 2
+  }
+}
