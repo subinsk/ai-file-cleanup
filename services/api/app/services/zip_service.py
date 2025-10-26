@@ -1,124 +1,187 @@
-"""ZIP file generation service"""
-import os
-import zipfile
-import tempfile
-import asyncio
-from typing import List, Dict, Any
-from pathlib import Path
-import aiofiles
+"""
+ZIP file creation service for downloading cleaned files
+"""
 import logging
+import os
+import tempfile
+import zipfile
+from typing import List, Dict, Any, BinaryIO
+from pathlib import Path
+import asyncio
+from fastapi.responses import StreamingResponse
+import io
 
 logger = logging.getLogger(__name__)
-
 
 class ZipService:
     """Service for creating ZIP files from selected files"""
     
-    def __init__(self, upload_dir: str = None):
-        self.upload_dir = upload_dir or "/tmp/uploads"
+    def __init__(self):
+        self.temp_dir = None
+        self.created_files = []
     
-    async def create_zip_from_files(
-        self, 
-        upload_id: str, 
-        file_ids: List[str], 
-        file_metadata: List[Dict[str, Any]] = None
-    ) -> str:
+    async def create_zip_from_files(self, files: List[Dict[str, Any]]) -> StreamingResponse:
         """
-        Create a ZIP file containing the specified files
+        Create a ZIP file from selected files
         
         Args:
-            upload_id: Unique identifier for the upload session
-            file_ids: List of file IDs to include in ZIP
-            file_metadata: Optional metadata about files
+            files: List of file dictionaries with 'id', 'filename', 'content', 'mime_type'
             
         Returns:
-            Path to the created ZIP file
+            StreamingResponse with ZIP file
         """
         try:
-            # Create temporary directory for ZIP creation
-            with tempfile.TemporaryDirectory() as temp_dir:
-                zip_filename = f"cleaned-files-{upload_id}.zip"
-                zip_path = os.path.join(temp_dir, zip_filename)
+            # Create temporary directory
+            self.temp_dir = tempfile.mkdtemp(prefix="ai_cleanup_")
+            zip_path = os.path.join(self.temp_dir, "cleaned_files.zip")
+            
+            # Create ZIP file
+            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                for file_info in files:
+                    try:
+                        # Create safe filename
+                        safe_filename = self._create_safe_filename(file_info['filename'])
+                        
+                        # Add file to ZIP
+                        zipf.writestr(safe_filename, file_info['content'])
+                        self.created_files.append(safe_filename)
+                        
+                        logger.info(f"Added {safe_filename} to ZIP")
+                        
+                    except Exception as e:
+                        logger.error(f"Failed to add {file_info.get('filename', 'unknown')} to ZIP: {e}")
+                        continue
+            
+            # Create streaming response
+            def iter_file():
+                with open(zip_path, 'rb') as f:
+                    while True:
+                        chunk = f.read(8192)  # 8KB chunks
+                        if not chunk:
+                            break
+                        yield chunk
                 
-                # Create ZIP file
-                with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-                    # Add files to ZIP
-                    for i, file_id in enumerate(file_ids):
-                        await self._add_file_to_zip(
-                            zip_file, 
-                            file_id, 
-                            file_metadata[i] if file_metadata and i < len(file_metadata) else None
-                        )
-                
-                # Move ZIP to upload directory for serving
-                final_zip_path = os.path.join(self.upload_dir, zip_filename)
-                os.makedirs(os.path.dirname(final_zip_path), exist_ok=True)
-                
-                # Copy ZIP file to final location
-                async with aiofiles.open(zip_path, 'rb') as src:
-                    async with aiofiles.open(final_zip_path, 'wb') as dst:
-                        while chunk := await src.read(8192):
-                            await dst.write(chunk)
-                
-                logger.info(f"Created ZIP file: {final_zip_path}")
-                return final_zip_path
-                
+                # Cleanup after streaming
+                self._cleanup()
+            
+            return StreamingResponse(
+                iter_file(),
+                media_type="application/zip",
+                headers={
+                    "Content-Disposition": "attachment; filename=cleaned_files.zip",
+                    "Content-Type": "application/zip"
+                }
+            )
+            
         except Exception as e:
-            logger.error(f"Error creating ZIP file: {e}", exc_info=True)
+            logger.error(f"ZIP creation failed: {e}")
+            self._cleanup()
             raise
     
-    async def _add_file_to_zip(
-        self, 
-        zip_file: zipfile.ZipFile, 
-        file_id: str, 
-        metadata: Dict[str, Any] = None
-    ):
-        """Add a single file to the ZIP archive"""
-        try:
-            # For MVP, create placeholder content
-            # In production, this would read actual uploaded files
-            if metadata and 'name' in metadata:
-                filename = metadata['name']
-            else:
-                filename = f"file_{file_id}"
-            
-            # Create placeholder content
-            content = self._create_placeholder_content(file_id, metadata)
-            
-            # Add to ZIP with proper path structure
-            zip_path = f"cleaned/{filename}"
-            zip_file.writestr(zip_path, content)
-            
-            logger.debug(f"Added file to ZIP: {zip_path}")
-            
-        except Exception as e:
-            logger.error(f"Error adding file {file_id} to ZIP: {e}")
-            # Continue with other files even if one fails
-            pass
-    
-    def _create_placeholder_content(self, file_id: str, metadata: Dict[str, Any] = None) -> str:
-        """Create placeholder content for a file"""
-        content_lines = [
-            f"Cleaned file: {file_id}",
-            f"Original name: {metadata.get('name', 'unknown') if metadata else 'unknown'}",
-            f"Size: {metadata.get('size', 'unknown') if metadata else 'unknown'} bytes",
-            f"Type: {metadata.get('type', 'unknown') if metadata else 'unknown'}",
-            "",
-            "This is a placeholder for the cleaned file.",
-            "In production, this would contain the actual cleaned file content."
-        ]
+    async def create_zip_from_paths(self, file_paths: List[str], output_filename: str = "cleaned_files.zip") -> str:
+        """
+        Create a ZIP file from file paths
         
-        return "\n".join(content_lines)
-    
-    async def cleanup_zip(self, zip_path: str):
-        """Clean up a ZIP file after serving"""
+        Args:
+            file_paths: List of file paths to include
+            output_filename: Name of the output ZIP file
+            
+        Returns:
+            Path to created ZIP file
+        """
         try:
-            if os.path.exists(zip_path):
-                os.remove(zip_path)
-                logger.info(f"Cleaned up ZIP file: {zip_path}")
+            # Create temporary directory
+            self.temp_dir = tempfile.mkdtemp(prefix="ai_cleanup_")
+            zip_path = os.path.join(self.temp_dir, output_filename)
+            
+            # Create ZIP file
+            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                for file_path in file_paths:
+                    if os.path.exists(file_path):
+                        try:
+                            # Get relative path for ZIP
+                            arcname = os.path.basename(file_path)
+                            zipf.write(file_path, arcname)
+                            self.created_files.append(arcname)
+                            
+                            logger.info(f"Added {arcname} to ZIP")
+                            
+                        except Exception as e:
+                            logger.error(f"Failed to add {file_path} to ZIP: {e}")
+                            continue
+                    else:
+                        logger.warning(f"File not found: {file_path}")
+            
+            return zip_path
+            
         except Exception as e:
-            logger.error(f"Error cleaning up ZIP file {zip_path}: {e}")
+            logger.error(f"ZIP creation from paths failed: {e}")
+            self._cleanup()
+            raise
+    
+    def _create_safe_filename(self, filename: str) -> str:
+        """
+        Create a safe filename for ZIP entry
+        
+        Args:
+            filename: Original filename
+            
+        Returns:
+            Safe filename
+        """
+        # Remove or replace unsafe characters
+        safe_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_."
+        safe_filename = "".join(c if c in safe_chars else "_" for c in filename)
+        
+        # Ensure it's not empty
+        if not safe_filename:
+            safe_filename = "file"
+        
+        # Add extension if missing
+        if not safe_filename.endswith(('.pdf', '.jpg', '.jpeg', '.png', '.txt', '.doc', '.docx')):
+            safe_filename += ".file"
+        
+        return safe_filename
+    
+    def _cleanup(self):
+        """Clean up temporary files and directories"""
+        try:
+            if self.temp_dir and os.path.exists(self.temp_dir):
+                import shutil
+                shutil.rmtree(self.temp_dir)
+                logger.info("Cleaned up temporary directory")
+        except Exception as e:
+            logger.warning(f"Failed to cleanup temporary directory: {e}")
+        finally:
+            self.temp_dir = None
+            self.created_files = []
+    
+    async def get_zip_info(self, zip_path: str) -> Dict[str, Any]:
+        """
+        Get information about a ZIP file
+        
+        Args:
+            zip_path: Path to ZIP file
+            
+        Returns:
+            Dictionary with ZIP information
+        """
+        try:
+            with zipfile.ZipFile(zip_path, 'r') as zipf:
+                file_list = zipf.namelist()
+                total_size = sum(info.file_size for info in zipf.infolist())
+                compressed_size = os.path.getsize(zip_path)
+                
+                return {
+                    'file_count': len(file_list),
+                    'files': file_list,
+                    'total_uncompressed_size': total_size,
+                    'compressed_size': compressed_size,
+                    'compression_ratio': round((1 - compressed_size / total_size) * 100, 2) if total_size > 0 else 0
+                }
+        except Exception as e:
+            logger.error(f"Failed to get ZIP info: {e}")
+            return {}
 
-
-# Global instance
+# Create global instance
 zip_service = ZipService()

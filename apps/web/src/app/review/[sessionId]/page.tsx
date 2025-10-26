@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState, useCallback } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 import {
   Button,
   Card,
@@ -12,28 +12,61 @@ import {
   GroupAccordion,
   Badge,
   LoadingSpinner,
+  Progress,
 } from '@ai-cleanup/ui';
 import { useUploadStore } from '@/lib/store';
 import { apiClient } from '@/lib/api-client';
 import type { DedupeGroup } from '@ai-cleanup/types';
-import { Download, FileCheck, Trash2, AlertCircle } from 'lucide-react';
+import { Download, FileCheck, Trash2, AlertCircle, RefreshCw } from 'lucide-react';
 import { formatBytes } from '@ai-cleanup/ui';
 
 export default function ReviewPage() {
   const router = useRouter();
+  const params = useParams();
+  const sessionId = params.sessionId as string;
+
   const {
-    duplicateGroups: storeGroups,
+    sessionStatus,
+    progress,
+    totalFiles,
+    processedFiles,
+    duplicateGroups,
+    processingStats,
+    errorMessage,
     selectedFiles,
     toggleFileSelection,
     selectAll,
     deselectAll,
+    updateSessionStatus,
     reset,
-    sessionId,
   } = useUploadStore();
-  const [groups, setGroups] = useState<DedupeGroup[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+
+  const [isPolling, setIsPolling] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
-  const [error, setError] = useState('');
+
+  const loadSessionData = useCallback(async () => {
+    try {
+      const status = await apiClient.getSessionStatus(sessionId);
+
+      // Update store with latest status
+      updateSessionStatus(
+        status.status,
+        status.progress,
+        status.processed_files,
+        status.failed_files,
+        status.duplicate_groups,
+        status.processing_stats,
+        status.error_message
+      );
+
+      // Start polling if still processing
+      if (status.status === 'processing' || status.status === 'uploaded') {
+        startPolling();
+      }
+    } catch (err) {
+      // Failed to load session data
+    }
+  }, [sessionId, updateSessionStatus]);
 
   useEffect(() => {
     if (!sessionId) {
@@ -41,33 +74,51 @@ export default function ReviewPage() {
       return;
     }
 
-    // Use groups from the upload store instead of calling API
-    const loadResults = async () => {
-      try {
-        setIsLoading(true);
+    // Load initial session data immediately
+    loadSessionData();
 
-        // Use groups from the upload store
-        setGroups((storeGroups as DedupeGroup[]) || []);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load results');
-      } finally {
-        setIsLoading(false);
-      }
+    return () => {
+      // Cleanup polling on unmount
+      setIsPolling(false);
     };
+  }, [sessionId, router, loadSessionData]);
 
-    loadResults();
-  }, [sessionId, storeGroups, router]);
-
-  const totalDuplicates = groups.reduce((sum, g) => sum + g.duplicates.length, 0);
-  const totalSizeSaved = groups.reduce((sum, g) => sum + g.totalSizeSaved, 0);
-  const allDuplicateIds = groups.flatMap((g) => g.duplicates.map((d) => d.file.id));
-
-  const handleSelectAllDuplicates = () => {
-    selectAll(allDuplicateIds);
+  const startPolling = () => {
+    setIsPolling(true);
+    pollSessionStatus();
   };
 
-  const handleDeselectAll = () => {
-    deselectAll();
+  const pollSessionStatus = async () => {
+    if (!isPolling) return;
+
+    try {
+      const status = await apiClient.getSessionStatus(sessionId);
+
+      // Update store with latest status
+      updateSessionStatus(
+        status.status,
+        status.progress,
+        status.processed_files,
+        status.failed_files,
+        status.duplicate_groups,
+        status.processing_stats,
+        status.error_message
+      );
+
+      // Continue polling if not completed or failed
+      if (status.status === 'processing' || status.status === 'uploaded') {
+        setTimeout(pollSessionStatus, 2000); // Poll every 2 seconds
+      } else {
+        setIsPolling(false);
+      }
+    } catch (err) {
+      // Failed to poll session status
+      setIsPolling(false);
+    }
+  };
+
+  const handleRefresh = () => {
+    loadSessionData();
   };
 
   const handleDownload = async () => {
@@ -75,13 +126,14 @@ export default function ReviewPage() {
 
     setIsDownloading(true);
     try {
+      // Call the real cleanup API
       const blob = await apiClient.cleanupSessionFiles(sessionId, Array.from(selectedFiles));
 
       // Create download link
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `cleaned-files-${Date.now()}.zip`;
+      a.download = `cleaned-files-${sessionId}.zip`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -93,25 +145,90 @@ export default function ReviewPage() {
         router.push('/upload');
       }, 1000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Download failed');
+      // Download failed
     } finally {
       setIsDownloading(false);
     }
   };
 
-  if (isLoading) {
+  const totalDuplicates = duplicateGroups.reduce((sum: number, g) => {
+    const group = g as DedupeGroup;
+    return sum + (group.duplicates?.length || 0);
+  }, 0);
+  const totalSizeSaved = duplicateGroups.reduce((sum: number, g) => {
+    const group = g as DedupeGroup;
+    return sum + (group.totalSizeSaved || 0);
+  }, 0);
+  const allDuplicateIds = duplicateGroups.flatMap((g) => {
+    const group = g as DedupeGroup;
+    return group.duplicates?.map((d) => d.file.id) || [];
+  });
+
+  const handleSelectAllDuplicates = () => {
+    selectAll(allDuplicateIds);
+  };
+
+  const handleDeselectAll = () => {
+    deselectAll();
+  };
+
+  // Show loading state while processing
+  if (sessionStatus === 'processing' || sessionStatus === 'uploaded') {
     return (
       <div className="min-h-screen bg-background">
         <main className="container py-8">
           <div className="max-w-4xl mx-auto flex flex-col items-center justify-center py-20">
             <LoadingSpinner size="lg" />
-            <p className="mt-4 text-muted-foreground">Analyzing files for duplicates...</p>
+            <h2 className="mt-4 text-2xl font-bold">Processing Your Files</h2>
+            <p className="mt-2 text-muted-foreground text-center max-w-md">
+              We&apos;re analyzing your files for duplicates. This may take a few moments...
+            </p>
+
+            <div className="mt-8 w-full max-w-md">
+              <div className="flex items-center justify-between text-sm mb-2">
+                <span className="text-muted-foreground">Progress</span>
+                <span className="font-medium">{progress}%</span>
+              </div>
+              <Progress value={progress} />
+
+              <div className="mt-4 text-sm text-muted-foreground text-center">
+                {processedFiles} of {totalFiles} files processed
+              </div>
+            </div>
+
+            <Button variant="outline" onClick={handleRefresh} className="mt-6" disabled={isPolling}>
+              <RefreshCw className={`w-4 h-4 mr-2 ${isPolling ? 'animate-spin' : ''}`} />
+              Refresh Status
+            </Button>
           </div>
         </main>
       </div>
     );
   }
 
+  // Show error state
+  if (sessionStatus === 'failed') {
+    return (
+      <div className="min-h-screen bg-background">
+        <main className="container py-8">
+          <div className="max-w-4xl mx-auto flex flex-col items-center justify-center py-20">
+            <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center mb-4">
+              <AlertCircle className="w-8 h-8 text-red-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-red-600">Processing Failed</h2>
+            <p className="mt-2 text-muted-foreground text-center max-w-md">
+              {errorMessage || 'An error occurred while processing your files.'}
+            </p>
+            <Button onClick={() => router.push('/upload')} className="mt-6">
+              Try Again
+            </Button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Show completed state
   return (
     <div className="min-h-screen bg-background">
       <main className="container py-8">
@@ -131,7 +248,7 @@ export default function ReviewPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Duplicate Groups</p>
-                    <p className="text-2xl font-bold">{groups.length}</p>
+                    <p className="text-2xl font-bold">{duplicateGroups.length}</p>
                   </div>
                   <FileCheck className="w-8 h-8 text-muted-foreground" />
                 </div>
@@ -142,7 +259,7 @@ export default function ReviewPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Total Duplicates</p>
-                    <p className="text-2xl font-bold">{totalDuplicates}</p>
+                    <p className="text-2xl font-bold">{totalDuplicates.toString()}</p>
                   </div>
                   <Trash2 className="w-8 h-8 text-muted-foreground" />
                 </div>
@@ -161,16 +278,42 @@ export default function ReviewPage() {
             </Card>
           </div>
 
-          {/* Error Message */}
-          {error && (
-            <div className="flex items-start gap-3 p-4 text-sm text-red-600 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-              <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-              <span>{error}</span>
-            </div>
+          {/* Processing Stats */}
+          {Object.keys(processingStats).length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Processing Statistics</CardTitle>
+                <CardDescription>Details about the file processing results</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <p className="text-muted-foreground">Total Files</p>
+                    <p className="font-semibold">{(processingStats as any)?.total_files || 0}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Successful</p>
+                    <p className="font-semibold text-green-600">
+                      {(processingStats as any)?.successful_files || 0}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Failed</p>
+                    <p className="font-semibold text-red-600">
+                      {(processingStats as any)?.failed_files || 0}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Text Files</p>
+                    <p className="font-semibold">{(processingStats as any)?.text_files || 0}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           )}
 
           {/* Actions */}
-          {groups.length > 0 && (
+          {duplicateGroups.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle>Quick Actions</CardTitle>
@@ -219,7 +362,7 @@ export default function ReviewPage() {
           )}
 
           {/* Duplicate Groups */}
-          {groups.length > 0 ? (
+          {duplicateGroups.length > 0 ? (
             <Card>
               <CardHeader>
                 <CardTitle>Duplicate Groups</CardTitle>
@@ -229,7 +372,7 @@ export default function ReviewPage() {
               </CardHeader>
               <CardContent>
                 <GroupAccordion
-                  groups={groups}
+                  groups={duplicateGroups as DedupeGroup[]}
                   selectedFiles={selectedFiles}
                   onFileSelect={toggleFileSelection}
                 />

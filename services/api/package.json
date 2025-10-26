@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "venv\\Scripts\\python.exe run.py",
     "start": "venv\\Scripts\\python.exe run.py",
-    "install:deps": "venv\\Scripts\\pip.exe install -r requirements.txt"
+    "install:deps": "venv\\Scripts\\pip.exe install -r requirements.txt",
+    "postinstall": "venv\\Scripts\\pip.exe install -r requirements.txt"
   }
 }

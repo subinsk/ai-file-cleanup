@@ -2,7 +2,6 @@ import type {
   LoginRequest,
   LoginResponse,
   UserPublic,
-  DedupePreviewRequest,
   DedupePreviewResponse,
   GenerateLicenseResponse,
   ListLicensesResponse,
@@ -71,8 +70,10 @@ class ApiClient {
     return this.fetch<UserPublic>('/auth/me');
   }
 
-  // File Upload
-  async uploadFiles(files: File[]): Promise<{ uploadId: string; files: unknown[] }> {
+  // File Upload with Session Management
+  async uploadFiles(
+    files: File[]
+  ): Promise<{ sessionId: string; status: string; message: string }> {
     const formData = new FormData();
     files.forEach((file) => {
       formData.append('files', file);
@@ -86,7 +87,7 @@ class ApiClient {
       headers['Authorization'] = `Bearer ${accessToken}`;
     }
 
-    const response = await fetch(`${this.baseUrl}/dedupe/preview`, {
+    const response = await fetch(`${this.baseUrl}/uploads/upload`, {
       method: 'POST',
       credentials: 'include',
       headers,
@@ -98,11 +99,119 @@ class ApiClient {
       throw new Error(error.message || `HTTP ${response.status}`);
     }
 
+    const result = await response.json();
+    // Upload session created successfully
+
+    return {
+      sessionId: result.session_id,
+      status: result.status,
+      message: result.message,
+    };
+  }
+
+  // Session Status Management
+  async getSessionStatus(sessionId: string): Promise<{
+    session_id: string;
+    status: string;
+    progress: number;
+    total_files: number;
+    processed_files: number;
+    failed_files: number;
+    duplicate_groups: any[];
+    processing_stats: any;
+    error_message?: string;
+  }> {
+    const accessToken =
+      typeof window !== 'undefined' ? localStorage.getItem('api_access_token') : null;
+    const headers: Record<string, string> = {};
+    if (accessToken) {
+      headers['Authorization'] = `Bearer ${accessToken}`;
+    }
+
+    const response = await fetch(`${this.baseUrl}/uploads/sessions/${sessionId}`, {
+      method: 'GET',
+      credentials: 'include',
+      headers,
+    });
+
+    if (!response.ok) {
+      const error = await response
+        .json()
+        .catch(() => ({ message: 'Failed to get session status' }));
+      throw new Error(error.message || `HTTP ${response.status}`);
+    }
+
     return response.json();
   }
 
-  // Deduplication
-  async getDedupePreview(data: DedupePreviewRequest): Promise<DedupePreviewResponse> {
+  async listUserSessions(): Promise<any[]> {
+    const accessToken =
+      typeof window !== 'undefined' ? localStorage.getItem('api_access_token') : null;
+    const headers: Record<string, string> = {};
+    if (accessToken) {
+      headers['Authorization'] = `Bearer ${accessToken}`;
+    }
+
+    const response = await fetch(`${this.baseUrl}/uploads/sessions`, {
+      method: 'GET',
+      credentials: 'include',
+      headers,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Failed to list sessions' }));
+      throw new Error(error.message || `HTTP ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  async cleanupSessionFiles(sessionId: string, selectedFiles: string[]): Promise<Blob> {
+    const accessToken =
+      typeof window !== 'undefined' ? localStorage.getItem('api_access_token') : null;
+    const headers: Record<string, string> = {};
+    if (accessToken) {
+      headers['Authorization'] = `Bearer ${accessToken}`;
+    }
+
+    const response = await fetch(`${this.baseUrl}/uploads/sessions/${sessionId}/cleanup`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        ...headers,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ selectedFiles }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Failed to cleanup files' }));
+      throw new Error(error.message || `HTTP ${response.status}`);
+    }
+
+    return response.blob();
+  }
+
+  async deleteSession(sessionId: string): Promise<void> {
+    const accessToken =
+      typeof window !== 'undefined' ? localStorage.getItem('api_access_token') : null;
+    const headers: Record<string, string> = {};
+    if (accessToken) {
+      headers['Authorization'] = `Bearer ${accessToken}`;
+    }
+
+    const response = await fetch(`${this.baseUrl}/uploads/sessions/${sessionId}`, {
+      method: 'DELETE',
+      credentials: 'include',
+      headers,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Failed to delete session' }));
+      throw new Error(error.message || `HTTP ${response.status}`);
+    }
+  }
+  async getDedupePreview(data: { files: any[] }): Promise<DedupePreviewResponse> {
     return this.fetch<DedupePreviewResponse>('/dedupe/preview', {
       method: 'POST',
       body: JSON.stringify(data),

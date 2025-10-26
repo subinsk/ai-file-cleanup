@@ -23,8 +23,8 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRATION_MINUTES: int = 10080  # 7 days
     
-    # CORS - Allow Vercel domains and local development
-    CORS_ORIGINS: Union[List[str], str] = "http://localhost:3000,http://localhost:3000,http://localhost:5173,http://localhost:5173"
+    # CORS - Allow all origins for development
+    CORS_ORIGINS: Union[List[str], str] = "*"
     ALLOWED_HOSTS: List[str] = ["*"]
     
     @field_validator('CORS_ORIGINS', mode='before')

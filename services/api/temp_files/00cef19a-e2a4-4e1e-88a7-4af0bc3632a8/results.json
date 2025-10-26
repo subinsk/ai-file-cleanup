@@ -1,0 +1,588 @@
+{
+  "session_id": "00cef19a-e2a4-4e1e-88a7-4af0bc3632a8",
+  "user_id": "399fd8e5-1dcf-4cb1-86cc-5c9d52c8b8d7",
+  "created_at": "2025-10-26T10:07:00.444460",
+  "status": "completed",
+  "progress": 100,
+  "total_files": 13,
+  "processed_files": 13,
+  "failed_files": 0,
+  "duplicate_groups": [
+    {
+      "id": "group_0",
+      "groupIndex": 0,
+      "keepFile": {
+        "success": true,
+        "file_hash": "ac7757b9727ddbb2bc3f0c0ced6be4c3955d1b537cd55dc5880ed65942ab2fb2",
+        "filename": "document_copy.txt",
+        "mime_type": "text/plain",
+        "file_type": "text",
+        "text_content": "AI File Cleanup System - Test Document This is a comprehensive test document for the AI-powered file deduplication system. The system uses advanced machine learning algorithms to identify duplicate files based on content similarity rather than just file names or sizes. Key Features: - Text similarity detection using DistilBERT embeddings - Image similarity detection using CLIP embeddings - PDF text extraction and analysis - Perceptual hashing for exact duplicates - Cosine similarity clustering - Interactive web and desktop interfaces The system can identify duplicates even when files have different names, are stored in different formats, or have been slightly modified. Technical Implementation: - Backend: Python FastAPI with PostgreSQL pgvector - ML Service: PyTorch with Hugging Face transformers - Frontend: React with Next.js and Electron - Database: Neon PostgreSQL with vector extensions This document serves as a test case for the deduplication algorithms.",
+        "text_excerpt": "AI File Cleanup System - Test Document This is a comprehensive test document for the AI-powered file deduplication system. The system uses advanced machine learning algorithms to identify duplicate files based on content similarity rather than just file names or sizes. Key Features: - Text similarity detection using DistilBERT embeddings - Image similarity detection using CLIP embeddings - PDF text extraction and analysis - Perceptual hashing for exact duplicates - Cosine similarity clustering -...",
+        "metadata": {
+          "original_length": 1009,
+          "cleaned_length": 972
+        },
+        "processing_info": {
+          "text_extracted": true,
+          "text_length": 972
+        },
+        "id": "file_document_copy.txt",
+        "fileName": "document_copy.txt",
+        "name": "document_copy.txt",
+        "sizeBytes": 1009,
+        "size": 1009,
+        "mimeType": "text/plain",
+        "type": "text/plain",
+        "sha256": "ac7757b9727ddbb2bc3f0c0ced6be4c3955d1b537cd55dc5880ed65942ab2fb2"
+      },
+      "duplicates": [
+        {
+          "file": {
+            "success": true,
+            "file_hash": "ac7757b9727ddbb2bc3f0c0ced6be4c3955d1b537cd55dc5880ed65942ab2fb2",
+            "filename": "document_original.txt",
+            "mime_type": "text/plain",
+            "file_type": "text",
+            "text_content": "AI File Cleanup System - Test Document This is a comprehensive test document for the AI-powered file deduplication system. The system uses advanced machine learning algorithms to identify duplicate files based on content similarity rather than just file names or sizes. Key Features: - Text similarity detection using DistilBERT embeddings - Image similarity detection using CLIP embeddings - PDF text extraction and analysis - Perceptual hashing for exact duplicates - Cosine similarity clustering - Interactive web and desktop interfaces The system can identify duplicates even when files have different names, are stored in different formats, or have been slightly modified. Technical Implementation: - Backend: Python FastAPI with PostgreSQL pgvector - ML Service: PyTorch with Hugging Face transformers - Frontend: React with Next.js and Electron - Database: Neon PostgreSQL with vector extensions This document serves as a test case for the deduplication algorithms.",
+            "text_excerpt": "AI File Cleanup System - Test Document This is a comprehensive test document for the AI-powered file deduplication system. The system uses advanced machine learning algorithms to identify duplicate files based on content similarity rather than just file names or sizes. Key Features: - Text similarity detection using DistilBERT embeddings - Image similarity detection using CLIP embeddings - PDF text extraction and analysis - Perceptual hashing for exact duplicates - Cosine similarity clustering -...",
+            "metadata": {
+              "original_length": 1009,
+              "cleaned_length": 972
+            },
+            "processing_info": {
+              "text_extracted": true,
+              "text_length": 972
+            },
+            "id": "file_document_original.txt",
+            "fileName": "document_original.txt",
+            "name": "document_original.txt",
+            "sizeBytes": 1009,
+            "size": 1009,
+            "mimeType": "text/plain",
+            "type": "text/plain",
+            "sha256": "ac7757b9727ddbb2bc3f0c0ced6be4c3955d1b537cd55dc5880ed65942ab2fb2"
+          },
+          "similarity": 1.0,
+          "reason": "Exact hash match",
+          "isKept": false
+        },
+        {
+          "file": {
+            "success": true,
+            "file_hash": "ac7757b9727ddbb2bc3f0c0ced6be4c3955d1b537cd55dc5880ed65942ab2fb2",
+            "filename": "duplicate_document.txt",
+            "mime_type": "text/plain",
+            "file_type": "text",
+            "text_content": "AI File Cleanup System - Test Document This is a comprehensive test document for the AI-powered file deduplication system. The system uses advanced machine learning algorithms to identify duplicate files based on content similarity rather than just file names or sizes. Key Features: - Text similarity detection using DistilBERT embeddings - Image similarity detection using CLIP embeddings - PDF text extraction and analysis - Perceptual hashing for exact duplicates - Cosine similarity clustering - Interactive web and desktop interfaces The system can identify duplicates even when files have different names, are stored in different formats, or have been slightly modified. Technical Implementation: - Backend: Python FastAPI with PostgreSQL pgvector - ML Service: PyTorch with Hugging Face transformers - Frontend: React with Next.js and Electron - Database: Neon PostgreSQL with vector extensions This document serves as a test case for the deduplication algorithms.",
+            "text_excerpt": "AI File Cleanup System - Test Document This is a comprehensive test document for the AI-powered file deduplication system. The system uses advanced machine learning algorithms to identify duplicate files based on content similarity rather than just file names or sizes. Key Features: - Text similarity detection using DistilBERT embeddings - Image similarity detection using CLIP embeddings - PDF text extraction and analysis - Perceptual hashing for exact duplicates - Cosine similarity clustering -...",
+            "metadata": {
+              "original_length": 1009,
+              "cleaned_length": 972
+            },
+            "processing_info": {
+              "text_extracted": true,
+              "text_length": 972
+            },
+            "id": "file_duplicate_document.txt",
+            "fileName": "duplicate_document.txt",
+            "name": "duplicate_document.txt",
+            "sizeBytes": 1009,
+            "size": 1009,
+            "mimeType": "text/plain",
+            "type": "text/plain",
+            "sha256": "ac7757b9727ddbb2bc3f0c0ced6be4c3955d1b537cd55dc5880ed65942ab2fb2"
+          },
+          "similarity": 1.0,
+          "reason": "Exact hash match",
+          "isKept": false
+        },
+        {
+          "file": {
+            "success": true,
+            "file_hash": "ac7757b9727ddbb2bc3f0c0ced6be4c3955d1b537cd55dc5880ed65942ab2fb2",
+            "filename": "README.txt",
+            "mime_type": "text/plain",
+            "file_type": "text",
+            "text_content": "AI File Cleanup System - Test Document This is a comprehensive test document for the AI-powered file deduplication system. The system uses advanced machine learning algorithms to identify duplicate files based on content similarity rather than just file names or sizes. Key Features: - Text similarity detection using DistilBERT embeddings - Image similarity detection using CLIP embeddings - PDF text extraction and analysis - Perceptual hashing for exact duplicates - Cosine similarity clustering - Interactive web and desktop interfaces The system can identify duplicates even when files have different names, are stored in different formats, or have been slightly modified. Technical Implementation: - Backend: Python FastAPI with PostgreSQL pgvector - ML Service: PyTorch with Hugging Face transformers - Frontend: React with Next.js and Electron - Database: Neon PostgreSQL with vector extensions This document serves as a test case for the deduplication algorithms.",
+            "text_excerpt": "AI File Cleanup System - Test Document This is a comprehensive test document for the AI-powered file deduplication system. The system uses advanced machine learning algorithms to identify duplicate files based on content similarity rather than just file names or sizes. Key Features: - Text similarity detection using DistilBERT embeddings - Image similarity detection using CLIP embeddings - PDF text extraction and analysis - Perceptual hashing for exact duplicates - Cosine similarity clustering -...",
+            "metadata": {
+              "original_length": 1009,
+              "cleaned_length": 972
+            },
+            "processing_info": {
+              "text_extracted": true,
+              "text_length": 972
+            },
+            "id": "file_README.txt",
+            "fileName": "README.txt",
+            "name": "README.txt",
+            "sizeBytes": 1009,
+            "size": 1009,
+            "mimeType": "text/plain",
+            "type": "text/plain",
+            "sha256": "ac7757b9727ddbb2bc3f0c0ced6be4c3955d1b537cd55dc5880ed65942ab2fb2"
+          },
+          "similarity": 1.0,
+          "reason": "Exact hash match",
+          "isKept": false
+        }
+      ],
+      "reason": "Exact hash match",
+      "totalSizeSaved": 3027
+    },
+    {
+      "id": "group_1",
+      "groupIndex": 1,
+      "keepFile": {
+        "success": true,
+        "file_hash": "2d74270557eb33614893cc1ccf2f72f3cdfaefe703d98063619beddfac99e61d",
+        "filename": "image_duplicate.txt",
+        "mime_type": "text/plain",
+        "file_type": "text",
+        "text_content": "This is a placeholder for an image file. In a real test scenario, you would have actual image files here. For testing image deduplication, you would typically include: - Same image in different formats (JPG, PNG, WebP) - Same image with different compression levels - Same image with different sizes resolutions - Similar images with slight modifications Since we can t create actual binary image files in this text-based environment, this serves as a placeholder to indicate where image test files would go.",
+        "text_excerpt": "This is a placeholder for an image file. In a real test scenario, you would have actual image files here. For testing image deduplication, you would typically include: - Same image in different formats (JPG, PNG, WebP) - Same image with different compression levels - Same image with different sizes resolutions - Similar images with slight modifications Since we can t create actual binary image files in this text-based environment, this serves as a placeholder to indicate where image test files w...",
+        "metadata": {
+          "original_length": 522,
+          "cleaned_length": 508
+        },
+        "processing_info": {
+          "text_extracted": true,
+          "text_length": 508
+        },
+        "id": "file_image_duplicate.txt",
+        "fileName": "image_duplicate.txt",
+        "name": "image_duplicate.txt",
+        "sizeBytes": 522,
+        "size": 522,
+        "mimeType": "text/plain",
+        "type": "text/plain",
+        "sha256": "2d74270557eb33614893cc1ccf2f72f3cdfaefe703d98063619beddfac99e61d"
+      },
+      "duplicates": [
+        {
+          "file": {
+            "success": true,
+            "file_hash": "2d74270557eb33614893cc1ccf2f72f3cdfaefe703d98063619beddfac99e61d",
+            "filename": "simple_image.txt",
+            "mime_type": "text/plain",
+            "file_type": "text",
+            "text_content": "This is a placeholder for an image file. In a real test scenario, you would have actual image files here. For testing image deduplication, you would typically include: - Same image in different formats (JPG, PNG, WebP) - Same image with different compression levels - Same image with different sizes resolutions - Similar images with slight modifications Since we can t create actual binary image files in this text-based environment, this serves as a placeholder to indicate where image test files would go.",
+            "text_excerpt": "This is a placeholder for an image file. In a real test scenario, you would have actual image files here. For testing image deduplication, you would typically include: - Same image in different formats (JPG, PNG, WebP) - Same image with different compression levels - Same image with different sizes resolutions - Similar images with slight modifications Since we can t create actual binary image files in this text-based environment, this serves as a placeholder to indicate where image test files w...",
+            "metadata": {
+              "original_length": 522,
+              "cleaned_length": 508
+            },
+            "processing_info": {
+              "text_extracted": true,
+              "text_length": 508
+            },
+            "id": "file_simple_image.txt",
+            "fileName": "simple_image.txt",
+            "name": "simple_image.txt",
+            "sizeBytes": 522,
+            "size": 522,
+            "mimeType": "text/plain",
+            "type": "text/plain",
+            "sha256": "2d74270557eb33614893cc1ccf2f72f3cdfaefe703d98063619beddfac99e61d"
+          },
+          "similarity": 1.0,
+          "reason": "Exact hash match",
+          "isKept": false
+        }
+      ],
+      "reason": "Exact hash match",
+      "totalSizeSaved": 522
+    },
+    {
+      "id": "group_2",
+      "groupIndex": 2,
+      "keepFile": {
+        "success": true,
+        "file_hash": "670133078f947ac5a3ed23c805359dfa36a41eb152c6d1ff364a0e4ebe3a1eb6",
+        "filename": "log.txt",
+        "mime_type": "text/plain",
+        "file_type": "text",
+        "text_content": "2024-01-15 10:30:15 INFO Starting AI File Cleanup System 2024-01-15 10:30:16 INFO Loading ML models... 2024-01-15 10:30:18 INFO Models loaded successfully 2024-01-15 10:30:19 INFO Database connection established 2024-01-15 10:30:20 INFO API server started on port 3001 2024-01-15 10:30:21 INFO ML service started on port 3002 2024-01-15 10:30:22 INFO Web interface available at http: localhost:3000 2024-01-15 10:30:23 INFO Desktop app ready for use",
+        "text_excerpt": "2024-01-15 10:30:15 INFO Starting AI File Cleanup System 2024-01-15 10:30:16 INFO Loading ML models... 2024-01-15 10:30:18 INFO Models loaded successfully 2024-01-15 10:30:19 INFO Database connection established 2024-01-15 10:30:20 INFO API server started on port 3001 2024-01-15 10:30:21 INFO ML service started on port 3002 2024-01-15 10:30:22 INFO Web interface available at http: localhost:3000 2024-01-15 10:30:23 INFO Desktop app ready for use",
+        "metadata": {
+          "original_length": 475,
+          "cleaned_length": 449
+        },
+        "processing_info": {
+          "text_extracted": true,
+          "text_length": 449
+        },
+        "id": "file_log.txt",
+        "fileName": "log.txt",
+        "name": "log.txt",
+        "sizeBytes": 475,
+        "size": 475,
+        "mimeType": "text/plain",
+        "type": "text/plain",
+        "sha256": "670133078f947ac5a3ed23c805359dfa36a41eb152c6d1ff364a0e4ebe3a1eb6"
+      },
+      "duplicates": [
+        {
+          "file": {
+            "success": true,
+            "file_hash": "670133078f947ac5a3ed23c805359dfa36a41eb152c6d1ff364a0e4ebe3a1eb6",
+            "filename": "log_backup.txt",
+            "mime_type": "text/plain",
+            "file_type": "text",
+            "text_content": "2024-01-15 10:30:15 INFO Starting AI File Cleanup System 2024-01-15 10:30:16 INFO Loading ML models... 2024-01-15 10:30:18 INFO Models loaded successfully 2024-01-15 10:30:19 INFO Database connection established 2024-01-15 10:30:20 INFO API server started on port 3001 2024-01-15 10:30:21 INFO ML service started on port 3002 2024-01-15 10:30:22 INFO Web interface available at http: localhost:3000 2024-01-15 10:30:23 INFO Desktop app ready for use",
+            "text_excerpt": "2024-01-15 10:30:15 INFO Starting AI File Cleanup System 2024-01-15 10:30:16 INFO Loading ML models... 2024-01-15 10:30:18 INFO Models loaded successfully 2024-01-15 10:30:19 INFO Database connection established 2024-01-15 10:30:20 INFO API server started on port 3001 2024-01-15 10:30:21 INFO ML service started on port 3002 2024-01-15 10:30:22 INFO Web interface available at http: localhost:3000 2024-01-15 10:30:23 INFO Desktop app ready for use",
+            "metadata": {
+              "original_length": 475,
+              "cleaned_length": 449
+            },
+            "processing_info": {
+              "text_extracted": true,
+              "text_length": 449
+            },
+            "id": "file_log_backup.txt",
+            "fileName": "log_backup.txt",
+            "name": "log_backup.txt",
+            "sizeBytes": 475,
+            "size": 475,
+            "mimeType": "text/plain",
+            "type": "text/plain",
+            "sha256": "670133078f947ac5a3ed23c805359dfa36a41eb152c6d1ff364a0e4ebe3a1eb6"
+          },
+          "similarity": 1.0,
+          "reason": "Exact hash match",
+          "isKept": false
+        }
+      ],
+      "reason": "Exact hash match",
+      "totalSizeSaved": 475
+    },
+    {
+      "id": "group_3",
+      "groupIndex": 3,
+      "keepFile": {
+        "success": true,
+        "file_hash": "105a3b40530bf93f589d32a00930db3226dd102b47f4e16d4551d1f3de63e88b",
+        "filename": "report.pdf",
+        "mime_type": "application/pdf",
+        "file_type": "pdf",
+        "text_content": "",
+        "text_excerpt": "",
+        "metadata": {
+          "num_pages": 1,
+          "info": {},
+          "text_length": 0
+        },
+        "processing_info": {
+          "extracted_text": true,
+          "text_length": 0,
+          "num_pages": 1
+        },
+        "id": "file_report.pdf",
+        "fileName": "report.pdf",
+        "name": "report.pdf",
+        "sizeBytes": 539,
+        "size": 539,
+        "mimeType": "application/pdf",
+        "type": "application/pdf",
+        "sha256": "105a3b40530bf93f589d32a00930db3226dd102b47f4e16d4551d1f3de63e88b"
+      },
+      "duplicates": [
+        {
+          "file": {
+            "success": true,
+            "file_hash": "105a3b40530bf93f589d32a00930db3226dd102b47f4e16d4551d1f3de63e88b",
+            "filename": "report_copy.pdf",
+            "mime_type": "application/pdf",
+            "file_type": "pdf",
+            "text_content": "",
+            "text_excerpt": "",
+            "metadata": {
+              "num_pages": 1,
+              "info": {},
+              "text_length": 0
+            },
+            "processing_info": {
+              "extracted_text": true,
+              "text_length": 0,
+              "num_pages": 1
+            },
+            "id": "file_report_copy.pdf",
+            "fileName": "report_copy.pdf",
+            "name": "report_copy.pdf",
+            "sizeBytes": 539,
+            "size": 539,
+            "mimeType": "application/pdf",
+            "type": "application/pdf",
+            "sha256": "105a3b40530bf93f589d32a00930db3226dd102b47f4e16d4551d1f3de63e88b"
+          },
+          "similarity": 1.0,
+          "reason": "Exact hash match",
+          "isKept": false
+        }
+      ],
+      "reason": "Exact hash match",
+      "totalSizeSaved": 539
+    },
+    {
+      "id": "group_4",
+      "groupIndex": 4,
+      "keepFile": {
+        "success": true,
+        "file_hash": "ac7757b9727ddbb2bc3f0c0ced6be4c3955d1b537cd55dc5880ed65942ab2fb2",
+        "filename": "document_copy.txt",
+        "mime_type": "text/plain",
+        "file_type": "text",
+        "text_content": "AI File Cleanup System - Test Document This is a comprehensive test document for the AI-powered file deduplication system. The system uses advanced machine learning algorithms to identify duplicate files based on content similarity rather than just file names or sizes. Key Features: - Text similarity detection using DistilBERT embeddings - Image similarity detection using CLIP embeddings - PDF text extraction and analysis - Perceptual hashing for exact duplicates - Cosine similarity clustering - Interactive web and desktop interfaces The system can identify duplicates even when files have different names, are stored in different formats, or have been slightly modified. Technical Implementation: - Backend: Python FastAPI with PostgreSQL pgvector - ML Service: PyTorch with Hugging Face transformers - Frontend: React with Next.js and Electron - Database: Neon PostgreSQL with vector extensions This document serves as a test case for the deduplication algorithms.",
+        "text_excerpt": "AI File Cleanup System - Test Document This is a comprehensive test document for the AI-powered file deduplication system. The system uses advanced machine learning algorithms to identify duplicate files based on content similarity rather than just file names or sizes. Key Features: - Text similarity detection using DistilBERT embeddings - Image similarity detection using CLIP embeddings - PDF text extraction and analysis - Perceptual hashing for exact duplicates - Cosine similarity clustering -...",
+        "metadata": {
+          "original_length": 1009,
+          "cleaned_length": 972
+        },
+        "processing_info": {
+          "text_extracted": true,
+          "text_length": 972
+        },
+        "id": "file_document_copy.txt",
+        "fileName": "document_copy.txt",
+        "name": "document_copy.txt",
+        "sizeBytes": 1009,
+        "size": 1009,
+        "mimeType": "text/plain",
+        "type": "text/plain",
+        "sha256": "ac7757b9727ddbb2bc3f0c0ced6be4c3955d1b537cd55dc5880ed65942ab2fb2"
+      },
+      "duplicates": [
+        {
+          "file": {
+            "success": true,
+            "file_hash": "ac7757b9727ddbb2bc3f0c0ced6be4c3955d1b537cd55dc5880ed65942ab2fb2",
+            "filename": "document_original.txt",
+            "mime_type": "text/plain",
+            "file_type": "text",
+            "text_content": "AI File Cleanup System - Test Document This is a comprehensive test document for the AI-powered file deduplication system. The system uses advanced machine learning algorithms to identify duplicate files based on content similarity rather than just file names or sizes. Key Features: - Text similarity detection using DistilBERT embeddings - Image similarity detection using CLIP embeddings - PDF text extraction and analysis - Perceptual hashing for exact duplicates - Cosine similarity clustering - Interactive web and desktop interfaces The system can identify duplicates even when files have different names, are stored in different formats, or have been slightly modified. Technical Implementation: - Backend: Python FastAPI with PostgreSQL pgvector - ML Service: PyTorch with Hugging Face transformers - Frontend: React with Next.js and Electron - Database: Neon PostgreSQL with vector extensions This document serves as a test case for the deduplication algorithms.",
+            "text_excerpt": "AI File Cleanup System - Test Document This is a comprehensive test document for the AI-powered file deduplication system. The system uses advanced machine learning algorithms to identify duplicate files based on content similarity rather than just file names or sizes. Key Features: - Text similarity detection using DistilBERT embeddings - Image similarity detection using CLIP embeddings - PDF text extraction and analysis - Perceptual hashing for exact duplicates - Cosine similarity clustering -...",
+            "metadata": {
+              "original_length": 1009,
+              "cleaned_length": 972
+            },
+            "processing_info": {
+              "text_extracted": true,
+              "text_length": 972
+            },
+            "id": "file_document_original.txt",
+            "fileName": "document_original.txt",
+            "name": "document_original.txt",
+            "sizeBytes": 1009,
+            "size": 1009,
+            "mimeType": "text/plain",
+            "type": "text/plain",
+            "sha256": "ac7757b9727ddbb2bc3f0c0ced6be4c3955d1b537cd55dc5880ed65942ab2fb2"
+          },
+          "similarity": 1.0,
+          "reason": "Exact text content match",
+          "isKept": false
+        },
+        {
+          "file": {
+            "success": true,
+            "file_hash": "ac7757b9727ddbb2bc3f0c0ced6be4c3955d1b537cd55dc5880ed65942ab2fb2",
+            "filename": "duplicate_document.txt",
+            "mime_type": "text/plain",
+            "file_type": "text",
+            "text_content": "AI File Cleanup System - Test Document This is a comprehensive test document for the AI-powered file deduplication system. The system uses advanced machine learning algorithms to identify duplicate files based on content similarity rather than just file names or sizes. Key Features: - Text similarity detection using DistilBERT embeddings - Image similarity detection using CLIP embeddings - PDF text extraction and analysis - Perceptual hashing for exact duplicates - Cosine similarity clustering - Interactive web and desktop interfaces The system can identify duplicates even when files have different names, are stored in different formats, or have been slightly modified. Technical Implementation: - Backend: Python FastAPI with PostgreSQL pgvector - ML Service: PyTorch with Hugging Face transformers - Frontend: React with Next.js and Electron - Database: Neon PostgreSQL with vector extensions This document serves as a test case for the deduplication algorithms.",
+            "text_excerpt": "AI File Cleanup System - Test Document This is a comprehensive test document for the AI-powered file deduplication system. The system uses advanced machine learning algorithms to identify duplicate files based on content similarity rather than just file names or sizes. Key Features: - Text similarity detection using DistilBERT embeddings - Image similarity detection using CLIP embeddings - PDF text extraction and analysis - Perceptual hashing for exact duplicates - Cosine similarity clustering -...",
+            "metadata": {
+              "original_length": 1009,
+              "cleaned_length": 972
+            },
+            "processing_info": {
+              "text_extracted": true,
+              "text_length": 972
+            },
+            "id": "file_duplicate_document.txt",
+            "fileName": "duplicate_document.txt",
+            "name": "duplicate_document.txt",
+            "sizeBytes": 1009,
+            "size": 1009,
+            "mimeType": "text/plain",
+            "type": "text/plain",
+            "sha256": "ac7757b9727ddbb2bc3f0c0ced6be4c3955d1b537cd55dc5880ed65942ab2fb2"
+          },
+          "similarity": 1.0,
+          "reason": "Exact text content match",
+          "isKept": false
+        },
+        {
+          "file": {
+            "success": true,
+            "file_hash": "ac7757b9727ddbb2bc3f0c0ced6be4c3955d1b537cd55dc5880ed65942ab2fb2",
+            "filename": "README.txt",
+            "mime_type": "text/plain",
+            "file_type": "text",
+            "text_content": "AI File Cleanup System - Test Document This is a comprehensive test document for the AI-powered file deduplication system. The system uses advanced machine learning algorithms to identify duplicate files based on content similarity rather than just file names or sizes. Key Features: - Text similarity detection using DistilBERT embeddings - Image similarity detection using CLIP embeddings - PDF text extraction and analysis - Perceptual hashing for exact duplicates - Cosine similarity clustering - Interactive web and desktop interfaces The system can identify duplicates even when files have different names, are stored in different formats, or have been slightly modified. Technical Implementation: - Backend: Python FastAPI with PostgreSQL pgvector - ML Service: PyTorch with Hugging Face transformers - Frontend: React with Next.js and Electron - Database: Neon PostgreSQL with vector extensions This document serves as a test case for the deduplication algorithms.",
+            "text_excerpt": "AI File Cleanup System - Test Document This is a comprehensive test document for the AI-powered file deduplication system. The system uses advanced machine learning algorithms to identify duplicate files based on content similarity rather than just file names or sizes. Key Features: - Text similarity detection using DistilBERT embeddings - Image similarity detection using CLIP embeddings - PDF text extraction and analysis - Perceptual hashing for exact duplicates - Cosine similarity clustering -...",
+            "metadata": {
+              "original_length": 1009,
+              "cleaned_length": 972
+            },
+            "processing_info": {
+              "text_extracted": true,
+              "text_length": 972
+            },
+            "id": "file_README.txt",
+            "fileName": "README.txt",
+            "name": "README.txt",
+            "sizeBytes": 1009,
+            "size": 1009,
+            "mimeType": "text/plain",
+            "type": "text/plain",
+            "sha256": "ac7757b9727ddbb2bc3f0c0ced6be4c3955d1b537cd55dc5880ed65942ab2fb2"
+          },
+          "similarity": 1.0,
+          "reason": "Exact text content match",
+          "isKept": false
+        }
+      ],
+      "reason": "Exact text content match",
+      "totalSizeSaved": 3027
+    },
+    {
+      "id": "group_5",
+      "groupIndex": 5,
+      "keepFile": {
+        "success": true,
+        "file_hash": "2d74270557eb33614893cc1ccf2f72f3cdfaefe703d98063619beddfac99e61d",
+        "filename": "image_duplicate.txt",
+        "mime_type": "text/plain",
+        "file_type": "text",
+        "text_content": "This is a placeholder for an image file. In a real test scenario, you would have actual image files here. For testing image deduplication, you would typically include: - Same image in different formats (JPG, PNG, WebP) - Same image with different compression levels - Same image with different sizes resolutions - Similar images with slight modifications Since we can t create actual binary image files in this text-based environment, this serves as a placeholder to indicate where image test files would go.",
+        "text_excerpt": "This is a placeholder for an image file. In a real test scenario, you would have actual image files here. For testing image deduplication, you would typically include: - Same image in different formats (JPG, PNG, WebP) - Same image with different compression levels - Same image with different sizes resolutions - Similar images with slight modifications Since we can t create actual binary image files in this text-based environment, this serves as a placeholder to indicate where image test files w...",
+        "metadata": {
+          "original_length": 522,
+          "cleaned_length": 508
+        },
+        "processing_info": {
+          "text_extracted": true,
+          "text_length": 508
+        },
+        "id": "file_image_duplicate.txt",
+        "fileName": "image_duplicate.txt",
+        "name": "image_duplicate.txt",
+        "sizeBytes": 522,
+        "size": 522,
+        "mimeType": "text/plain",
+        "type": "text/plain",
+        "sha256": "2d74270557eb33614893cc1ccf2f72f3cdfaefe703d98063619beddfac99e61d"
+      },
+      "duplicates": [
+        {
+          "file": {
+            "success": true,
+            "file_hash": "2d74270557eb33614893cc1ccf2f72f3cdfaefe703d98063619beddfac99e61d",
+            "filename": "simple_image.txt",
+            "mime_type": "text/plain",
+            "file_type": "text",
+            "text_content": "This is a placeholder for an image file. In a real test scenario, you would have actual image files here. For testing image deduplication, you would typically include: - Same image in different formats (JPG, PNG, WebP) - Same image with different compression levels - Same image with different sizes resolutions - Similar images with slight modifications Since we can t create actual binary image files in this text-based environment, this serves as a placeholder to indicate where image test files would go.",
+            "text_excerpt": "This is a placeholder for an image file. In a real test scenario, you would have actual image files here. For testing image deduplication, you would typically include: - Same image in different formats (JPG, PNG, WebP) - Same image with different compression levels - Same image with different sizes resolutions - Similar images with slight modifications Since we can t create actual binary image files in this text-based environment, this serves as a placeholder to indicate where image test files w...",
+            "metadata": {
+              "original_length": 522,
+              "cleaned_length": 508
+            },
+            "processing_info": {
+              "text_extracted": true,
+              "text_length": 508
+            },
+            "id": "file_simple_image.txt",
+            "fileName": "simple_image.txt",
+            "name": "simple_image.txt",
+            "sizeBytes": 522,
+            "size": 522,
+            "mimeType": "text/plain",
+            "type": "text/plain",
+            "sha256": "2d74270557eb33614893cc1ccf2f72f3cdfaefe703d98063619beddfac99e61d"
+          },
+          "similarity": 1.0,
+          "reason": "Exact text content match",
+          "isKept": false
+        }
+      ],
+      "reason": "Exact text content match",
+      "totalSizeSaved": 522
+    },
+    {
+      "id": "group_6",
+      "groupIndex": 6,
+      "keepFile": {
+        "success": true,
+        "file_hash": "670133078f947ac5a3ed23c805359dfa36a41eb152c6d1ff364a0e4ebe3a1eb6",
+        "filename": "log.txt",
+        "mime_type": "text/plain",
+        "file_type": "text",
+        "text_content": "2024-01-15 10:30:15 INFO Starting AI File Cleanup System 2024-01-15 10:30:16 INFO Loading ML models... 2024-01-15 10:30:18 INFO Models loaded successfully 2024-01-15 10:30:19 INFO Database connection established 2024-01-15 10:30:20 INFO API server started on port 3001 2024-01-15 10:30:21 INFO ML service started on port 3002 2024-01-15 10:30:22 INFO Web interface available at http: localhost:3000 2024-01-15 10:30:23 INFO Desktop app ready for use",
+        "text_excerpt": "2024-01-15 10:30:15 INFO Starting AI File Cleanup System 2024-01-15 10:30:16 INFO Loading ML models... 2024-01-15 10:30:18 INFO Models loaded successfully 2024-01-15 10:30:19 INFO Database connection established 2024-01-15 10:30:20 INFO API server started on port 3001 2024-01-15 10:30:21 INFO ML service started on port 3002 2024-01-15 10:30:22 INFO Web interface available at http: localhost:3000 2024-01-15 10:30:23 INFO Desktop app ready for use",
+        "metadata": {
+          "original_length": 475,
+          "cleaned_length": 449
+        },
+        "processing_info": {
+          "text_extracted": true,
+          "text_length": 449
+        },
+        "id": "file_log.txt",
+        "fileName": "log.txt",
+        "name": "log.txt",
+        "sizeBytes": 475,
+        "size": 475,
+        "mimeType": "text/plain",
+        "type": "text/plain",
+        "sha256": "670133078f947ac5a3ed23c805359dfa36a41eb152c6d1ff364a0e4ebe3a1eb6"
+      },
+      "duplicates": [
+        {
+          "file": {
+            "success": true,
+            "file_hash": "670133078f947ac5a3ed23c805359dfa36a41eb152c6d1ff364a0e4ebe3a1eb6",
+            "filename": "log_backup.txt",
+            "mime_type": "text/plain",
+            "file_type": "text",
+            "text_content": "2024-01-15 10:30:15 INFO Starting AI File Cleanup System 2024-01-15 10:30:16 INFO Loading ML models... 2024-01-15 10:30:18 INFO Models loaded successfully 2024-01-15 10:30:19 INFO Database connection established 2024-01-15 10:30:20 INFO API server started on port 3001 2024-01-15 10:30:21 INFO ML service started on port 3002 2024-01-15 10:30:22 INFO Web interface available at http: localhost:3000 2024-01-15 10:30:23 INFO Desktop app ready for use",
+            "text_excerpt": "2024-01-15 10:30:15 INFO Starting AI File Cleanup System 2024-01-15 10:30:16 INFO Loading ML models... 2024-01-15 10:30:18 INFO Models loaded successfully 2024-01-15 10:30:19 INFO Database connection established 2024-01-15 10:30:20 INFO API server started on port 3001 2024-01-15 10:30:21 INFO ML service started on port 3002 2024-01-15 10:30:22 INFO Web interface available at http: localhost:3000 2024-01-15 10:30:23 INFO Desktop app ready for use",
+            "metadata": {
+              "original_length": 475,
+              "cleaned_length": 449
+            },
+            "processing_info": {
+              "text_extracted": true,
+              "text_length": 449
+            },
+            "id": "file_log_backup.txt",
+            "fileName": "log_backup.txt",
+            "name": "log_backup.txt",
+            "sizeBytes": 475,
+            "size": 475,
+            "mimeType": "text/plain",
+            "type": "text/plain",
+            "sha256": "670133078f947ac5a3ed23c805359dfa36a41eb152c6d1ff364a0e4ebe3a1eb6"
+          },
+          "similarity": 1.0,
+          "reason": "Exact text content match",
+          "isKept": false
+        }
+      ],
+      "reason": "Exact text content match",
+      "totalSizeSaved": 475
+    }
+  ],
+  "processing_stats": {
+    "total_files": 13,
+    "successful_files": 13,
+    "failed_files": 0,
+    "text_files": 11,
+    "image_files": 0,
+    "duplicate_groups": 7,
+    "total_duplicates": 11
+  },
+  "error_message": null,
+  "temp_dir": "temp_files\\00cef19a-e2a4-4e1e-88a7-4af0bc3632a8"
+}

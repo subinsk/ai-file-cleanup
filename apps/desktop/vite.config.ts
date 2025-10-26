@@ -23,6 +23,12 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    strictPort: true,
+    hmr: {
+      protocol: 'ws',
+      host: 'localhost',
+      port: 5173,
+    },
   },
   optimizeDeps: {
     exclude: ['@ai-cleanup/core', 'sharp', 'image-hash', 'pdf-parse', 'file-type'],
