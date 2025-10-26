@@ -1,0 +1,11 @@
+This is a completely different document with unrelated content.
+
+It discusses various topics including:
+- Weather patterns and climate change
+- Cooking recipes and food preparation
+- Travel destinations and tourism
+- Technology trends and innovations
+- Sports statistics and analysis
+
+This file should NOT be detected as a duplicate of the AI File Cleanup documents.
+It serves as a control test to ensure the system doesn't create false positives.

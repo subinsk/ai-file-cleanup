@@ -1,0 +1,10 @@
+This is a placeholder for an image file. In a real test scenario, you would have actual image files here.
+
+For testing image deduplication, you would typically include:
+- Same image in different formats (JPG, PNG, WebP)
+- Same image with different compression levels
+- Same image with different sizes/resolutions
+- Similar images with slight modifications
+
+Since we can't create actual binary image files in this text-based environment, 
+this serves as a placeholder to indicate where image test files would go.

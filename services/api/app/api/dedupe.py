@@ -55,6 +55,7 @@ async def preview_duplicates(
         all_images = []
         
         logger.info(f"Processing {len(request.files)} files for user {user.email}")
+        logger.info(f"Files received: {[f.get('name') for f in request.files]}")
         
         # Process each file
         for i, file_data in enumerate(request.files):
@@ -176,13 +177,13 @@ async def _process_real_file(file_data: Dict[str, Any], index: int) -> Dict[str,
         # Add additional metadata
         result.update({
             'id': f"file_{index}",
-            'fileName': filename,
-            'name': filename,
-            'size': file_size,
-            'type': file_type,
-            'mimeType': file_type,
+            'fileName': filename,  # Frontend expects fileName
+            'name': filename,  # Keep for compatibility
+            'sizeBytes': file_size,  # Frontend expects sizeBytes
+            'size': file_size,  # Keep for compatibility
+            'mimeType': file_type,  # Frontend expects mimeType
+            'type': file_type,  # Keep for compatibility
             'sha256': result.get('file_hash', ''),
-            'sizeBytes': file_size,
             'createdAt': None  # Optional field
         })
         
@@ -195,15 +196,15 @@ async def _process_real_file(file_data: Dict[str, Any], index: int) -> Dict[str,
         file_size = file_data.get('size', 0)
         return {
             'id': f"file_{index}",
-            'fileName': filename,
-            'name': filename,
-            'size': file_size,
-            'type': file_type,
-            'mimeType': file_type,
+            'fileName': filename,  # Frontend expects fileName
+            'name': filename,  # Keep for compatibility
+            'sizeBytes': file_size,  # Frontend expects sizeBytes
+            'size': file_size,  # Keep for compatibility
+            'mimeType': file_type,  # Frontend expects mimeType
+            'type': file_type,  # Keep for compatibility
             'success': False,
             'error': str(e),
             'sha256': '',
-            'sizeBytes': file_size,
             'createdAt': None
         }
 
@@ -223,14 +224,16 @@ async def _find_duplicate_groups(
     # Group files by SHA-256 hash (exact duplicates)
     hash_groups = {}
     for file in processed_files:
-        file_hash = file.get('sha256', '')
-        logger.info(f"File {file.get('name')} has hash: {file_hash[:16]}...")
+        # Try both 'sha256' and 'file_hash' fields for compatibility
+        file_hash = file.get('sha256') or file.get('file_hash', '')
+        logger.info(f"File {file.get('name')} has hash: {file_hash[:16] if file_hash else 'N/A'}...")
         if file_hash:
             if file_hash not in hash_groups:
                 hash_groups[file_hash] = []
             hash_groups[file_hash].append(file)
     
     logger.info(f"Found {len(hash_groups)} unique hashes")
+    logger.info(f"Hash groups: {list(hash_groups.keys())}")
     
     # Create groups for files with same hash
     group_index = 0

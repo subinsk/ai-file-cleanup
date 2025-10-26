@@ -2,7 +2,7 @@
 File upload and processing endpoints
 """
 import logging
-from typing import List
+from typing import List, Dict, Any
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
 from pydantic import BaseModel
 from app.middleware.auth import get_current_user
@@ -34,6 +34,7 @@ class FileUploadResponse(BaseModel):
     total_files: int
     successful_files: int
     failed_files: int
+    groups: List[Dict[str, Any]] = []  # Add groups for deduplication
 
 
 @router.post("/upload", response_model=FileUploadResponse)
@@ -110,11 +111,36 @@ async def upload_and_process_files(
         
         logger.info(f"File processing complete: {successful_count} successful, {failed_count} failed")
         
+        # Convert results to the format expected by deduplication
+        processed_files = []
+        for result in results:
+            processed_files.append({
+                'id': result.file_id,
+                'name': result.filename,
+                'size': result.metadata.get('size', 0) if result.metadata else 0,
+                'type': result.mime_type,
+                'success': result.success,
+                'text_content': result.text_content,
+                'base64_image': result.base64_image,
+                'perceptual_hash': result.perceptual_hash,
+                'file_hash': result.file_hash,
+                'sha256': result.file_hash,  # Add both for compatibility
+                'metadata': result.metadata,
+                'error': result.error
+            })
+        
+        # Find duplicate groups using the processed files
+        from app.api.dedupe import _find_duplicate_groups
+        groups = await _find_duplicate_groups(processed_files, [], [])
+        
+        logger.info(f"Found {len(groups)} duplicate groups")
+        
         return FileUploadResponse(
             results=results,
             total_files=len(files),
             successful_files=successful_count,
-            failed_files=failed_count
+            failed_files=failed_count,
+            groups=groups
         )
         
     except Exception as e:

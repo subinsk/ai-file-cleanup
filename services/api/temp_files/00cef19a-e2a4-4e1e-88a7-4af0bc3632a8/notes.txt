@@ -1,0 +1,18 @@
+Meeting Notes - Project Planning Session
+
+Date: 2024-01-15
+Attendees: John, Sarah, Mike, Lisa
+
+Agenda:
+1. Review current project status
+2. Discuss upcoming milestones
+3. Assign new tasks
+4. Budget review
+
+Action Items:
+- John: Complete user research by Friday
+- Sarah: Update project timeline
+- Mike: Prepare technical documentation
+- Lisa: Schedule client meeting
+
+Next Meeting: January 22, 2024 at 2:00 PM

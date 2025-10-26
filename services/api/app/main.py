@@ -1,7 +1,9 @@
 """
 Main FastAPI application
 """
+import asyncio
 import logging
+import sys
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,7 +11,8 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
 from app.core.config import settings
 from app.core.database import init_db, close_db
-from app.api import auth, license, dedupe, desktop, health, files
+from app.api import auth, license, dedupe, desktop, health, files, sessions
+from app.services.background_worker import background_worker
 
 # Configure logging
 logging.basicConfig(
@@ -24,13 +27,29 @@ async def lifespan(app: FastAPI):
     """Startup and shutdown events"""
     # Startup
     logger.info("🚀 Starting API service...")
+    
+    # Setup directories
+    import subprocess
+    try:
+        subprocess.run([sys.executable, "setup_directories.py"], check=True, cwd=".")
+        logger.info("✅ Directories setup complete")
+    except Exception as e:
+        logger.warning(f"⚠️ Directory setup failed: {e}")
+    
     await init_db()
     logger.info("✅ Database initialized")
+    
+    # Start background worker
+    logger.info("🔄 Starting background worker...")
+    worker_task = asyncio.create_task(background_worker.start())
+    logger.info("✅ Background worker started")
     
     yield
     
     # Shutdown
     logger.info("🛑 Shutting down API service...")
+    await background_worker.stop()
+    worker_task.cancel()
     await close_db()
 
 
@@ -64,6 +83,7 @@ app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(license.router, prefix="/license", tags=["license"])
 app.include_router(dedupe.router, prefix="/dedupe", tags=["dedupe"])
 app.include_router(files.router, prefix="/files", tags=["files"])
+app.include_router(sessions.router, prefix="/uploads", tags=["uploads"])
 app.include_router(desktop.router, prefix="/desktop", tags=["desktop"])
 
 

@@ -19,7 +19,7 @@ import { Upload, FileIcon, CheckCircle } from 'lucide-react';
 
 export default function UploadPage() {
   const router = useRouter();
-  const setUploadData = useUploadStore((state) => state.setUploadData);
+  const setSessionData = useUploadStore((state) => state.setSessionData);
   const [files, setFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -54,12 +54,22 @@ export default function UploadPage() {
       setUploadProgress(100);
       setUploadComplete(true);
 
-      // Store upload data
-      setUploadData(result.uploadId, result.files);
+      // Store session data
+      setSessionData(
+        result.sessionId,
+        result.status,
+        0, // progress will be updated by polling
+        files.length,
+        0, // processed files
+        0, // failed files
+        [], // duplicate groups
+        {} // processing stats
+        // errorMessage is optional, so we don't need to pass it
+      );
 
       // Navigate to review page after a short delay
       setTimeout(() => {
-        router.push('/review');
+        router.push(`/review/${result.sessionId}`);
       }, 1000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Upload failed');
