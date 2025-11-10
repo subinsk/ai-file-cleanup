@@ -26,6 +26,7 @@ class UploadSession:
         self.duplicate_groups = []
         self.processing_stats = {}
         self.error_message = None
+        # temp_dir will be set to absolute path in create_session
         self.temp_dir = Path(f"temp_files/{session_id}")
         self.results_file = self.temp_dir / "results.json"
         
@@ -58,11 +59,15 @@ class SessionManager:
         session_id = str(uuid.uuid4())
         session = UploadSession(session_id, user_id)
         
+        # Set temp_dir to absolute path
+        session.temp_dir = self.temp_base_dir / session_id
+        session.results_file = session.temp_dir / "results.json"
+        
         # Create temp directory for this session
         session.temp_dir.mkdir(parents=True, exist_ok=True)
         
         self.sessions[session_id] = session
-        logger.info(f"Created upload session {session_id} for user {user_id}")
+        logger.info(f"Created upload session {session_id} for user {user_id} at {session.temp_dir}")
         
         return session
     
@@ -109,6 +114,10 @@ class SessionManager:
                 session.duplicate_groups = data["duplicate_groups"]
                 session.processing_stats = data["processing_stats"]
                 session.error_message = data["error_message"]
+                
+                # Set temp_dir to absolute path
+                session.temp_dir = self.temp_base_dir / session_id
+                session.results_file = session.temp_dir / "results.json"
                 
                 return session
         except Exception as e:

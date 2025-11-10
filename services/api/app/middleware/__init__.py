@@ -1,1 +1,3 @@
-"""Middleware"""
+"""
+Middleware package
+"""

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import fastGlob from 'fast-glob';
@@ -128,10 +128,80 @@ ipcMain.handle('files:readFile', async (_, filePath: string) => {
 // Move files to trash
 ipcMain.handle('files:moveToTrash', async (_, filePaths: string[]) => {
   try {
-    // Dynamic import for ES-only module
-    const trash = (await import('trash')).default;
-    await trash(filePaths);
-    return { success: true };
+    if (!Array.isArray(filePaths) || filePaths.length === 0) {
+      throw new Error('No file paths provided');
+    }
+
+    // eslint-disable-next-line no-console
+    console.log('Received file paths to trash:', filePaths);
+
+    // Validate and normalize file paths, and deduplicate
+    const validPaths: string[] = [];
+    const invalidPaths: string[] = [];
+    const seenPaths = new Set<string>();
+
+    for (const filePath of filePaths) {
+      if (!filePath || typeof filePath !== 'string') {
+        invalidPaths.push(String(filePath));
+        continue;
+      }
+
+      // Check if it looks like a file ID (starts with "file_") instead of a path
+      if (filePath.startsWith('file_') && !filePath.includes('/') && !filePath.includes('\\')) {
+        // eslint-disable-next-line no-console
+        console.warn(`Skipping file ID (not a path): ${filePath}`);
+        invalidPaths.push(filePath);
+        continue;
+      }
+
+      // Normalize the path (handle both forward and backslashes)
+      // Use path.resolve to get absolute path and normalize separators
+      const normalizedPath = path.resolve(filePath);
+
+      // Deduplicate - skip if we've already seen this path
+      if (seenPaths.has(normalizedPath)) {
+        // eslint-disable-next-line no-console
+        console.log(`Skipping duplicate path: ${normalizedPath}`);
+        continue;
+      }
+      seenPaths.add(normalizedPath);
+
+      // Check if file exists
+      try {
+        await fs.access(normalizedPath);
+        validPaths.push(normalizedPath);
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn(`File does not exist: ${normalizedPath}`);
+        invalidPaths.push(normalizedPath);
+      }
+    }
+
+    if (validPaths.length === 0) {
+      throw new Error(`No valid file paths found. Invalid paths: ${invalidPaths.join(', ')}`);
+    }
+
+    // eslint-disable-next-line no-console
+    console.log(`Moving ${validPaths.length} unique file(s) to trash:`, validPaths);
+
+    // Use Electron's native shell.trashItem for reliable cross-platform trash support
+    const results = await Promise.allSettled(
+      validPaths.map((filePath) => shell.trashItem(filePath))
+    );
+
+    // Check for any failures
+    const failures = results.filter((result) => result.status === 'rejected');
+    if (failures.length > 0) {
+      const errors = failures.map((f) =>
+        f.status === 'rejected' ? String(f.reason) : 'Unknown error'
+      );
+      console.error('Some files failed to move to trash:', errors);
+      throw new Error(`Failed to move ${failures.length} file(s) to trash: ${errors.join(', ')}`);
+    }
+
+    // eslint-disable-next-line no-console
+    console.log(`Successfully moved ${validPaths.length} file(s) to trash`);
+    return { success: true, count: validPaths.length };
   } catch (error) {
     console.error('Error moving files to trash:', error);
     throw error;
@@ -252,11 +322,36 @@ ipcMain.handle('dedupe:preview', async (_, data: Record<string, unknown>) => {
 
     // eslint-disable-next-line no-console
     console.log('API response status:', response.status);
+    // eslint-disable-next-line no-console
+    console.log('API response headers:', Object.fromEntries(response.headers.entries()));
+
+    // Check content type before parsing
+    const contentType = response.headers.get('content-type') || '';
 
     if (!response.ok) {
-      const errorText = await response.text();
+      let errorText: string;
+      if (contentType.includes('application/json')) {
+        const errorData = await response.json();
+        errorText = errorData.detail || errorData.message || JSON.stringify(errorData);
+      } else {
+        errorText = await response.text();
+        // If it's HTML, try to extract meaningful error
+        if (errorText.startsWith('<!DOCTYPE') || errorText.startsWith('<html')) {
+          errorText = `Server returned HTML error page (status ${response.status}). The API may not be running or the endpoint doesn't exist.`;
+        }
+      }
       console.error('API error response:', errorText);
       throw new Error(`Failed to get dedupe preview: ${response.status} - ${errorText}`);
+    }
+
+    // Verify we're getting JSON before parsing
+    if (!contentType.includes('application/json')) {
+      const textResponse = await response.text();
+      console.error('Expected JSON but got:', contentType);
+      console.error('Response preview:', textResponse.substring(0, 200));
+      throw new Error(
+        `API returned non-JSON response (${contentType}). The endpoint may be misconfigured.`
+      );
     }
 
     const result = await response.json();

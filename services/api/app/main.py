@@ -11,15 +11,18 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
 from app.core.config import settings
 from app.core.database import init_db, close_db
-from app.api import auth, license, dedupe, desktop, health, files, sessions
+from app.api import auth, license, dedupe, desktop, health, files, sessions, metrics
 from app.services.background_worker import background_worker
+from app.middleware.rate_limit import RateLimitMiddleware
+from app.middleware.validation import RequestValidationMiddleware
+from app.middleware.metrics import MetricsMiddleware
 
-# Configure logging
-logging.basicConfig(
+# Configure structured logging
+from app.core.logging import setup_logging, metrics_collector
+logger = setup_logging(
     level=settings.LOG_LEVEL,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    json_format=True,  # Use JSON format for structured logging
 )
-logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -70,6 +73,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Metrics middleware (should be early to capture all requests)
+app.add_middleware(MetricsMiddleware)
+
+# Rate limiting middleware (100 requests per minute per user/IP)
+app.add_middleware(
+    RateLimitMiddleware,
+    max_requests=100,
+    window_seconds=60,
+)
+
+# Request validation middleware
+app.add_middleware(
+    RequestValidationMiddleware,
+    max_request_size=100 * 1024 * 1024,  # 100MB
+    max_files=100,
+)
+
 # Security middleware (production only)
 if settings.NODE_ENV == "production":
     app.add_middleware(
@@ -79,6 +99,7 @@ if settings.NODE_ENV == "production":
 
 # Register routes
 app.include_router(health.router, prefix="/health", tags=["health"])
+app.include_router(metrics.router, prefix="/metrics", tags=["metrics"])
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(license.router, prefix="/license", tags=["license"])
 app.include_router(dedupe.router, prefix="/dedupe", tags=["dedupe"])

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import {
   Button,
@@ -13,6 +13,7 @@ import {
   Badge,
   LoadingSpinner,
   Progress,
+  PaginatedList,
 } from '@ai-cleanup/ui';
 import { useUploadStore } from '@/lib/store';
 import { apiClient } from '@/lib/api-client';
@@ -38,7 +39,6 @@ export default function ReviewPage() {
     selectAll,
     deselectAll,
     updateSessionStatus,
-    reset,
   } = useUploadStore();
 
   const [isPolling, setIsPolling] = useState(false);
@@ -139,11 +139,8 @@ export default function ReviewPage() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
-      // Reset state after download
-      setTimeout(() => {
-        reset();
-        router.push('/upload');
-      }, 1000);
+      // Don't redirect - stay on the page
+      // User can download multiple times or continue reviewing
     } catch (err) {
       // Download failed
     } finally {
@@ -234,16 +231,19 @@ export default function ReviewPage() {
       <main className="container py-8">
         <div className="max-w-6xl mx-auto space-y-6">
           {/* Header */}
-          <div className="space-y-2">
+          <header className="space-y-2">
             <h1 className="text-3xl font-bold tracking-tight">Review Duplicates</h1>
             <p className="text-muted-foreground">
               Review detected duplicate files and select which ones to remove
             </p>
-          </div>
+          </header>
 
           {/* Summary Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card>
+          <section
+            className="grid grid-cols-1 md:grid-cols-3 gap-4"
+            aria-label="Duplicate detection summary"
+          >
+            <Card className="transition-all duration-200 hover:shadow-md">
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -276,7 +276,7 @@ export default function ReviewPage() {
                 </div>
               </CardContent>
             </Card>
-          </div>
+          </section>
 
           {/* Processing Stats */}
           {Object.keys(processingStats).length > 0 && (
@@ -314,18 +314,19 @@ export default function ReviewPage() {
 
           {/* Actions */}
           {duplicateGroups.length > 0 && (
-            <Card>
+            <Card className="transition-all duration-200 hover:shadow-md">
               <CardHeader>
                 <CardTitle>Quick Actions</CardTitle>
                 <CardDescription>
                   Select files to remove and download the cleaned archive
                 </CardDescription>
               </CardHeader>
-              <CardContent className="flex flex-wrap gap-3">
+              <CardContent className="flex flex-col sm:flex-row flex-wrap gap-3">
                 <Button
                   variant="outline"
                   onClick={handleSelectAllDuplicates}
                   disabled={allDuplicateIds.length === selectedFiles.size}
+                  aria-label={`Select all ${allDuplicateIds.length} duplicate files`}
                 >
                   Select All Duplicates
                 </Button>
@@ -333,17 +334,19 @@ export default function ReviewPage() {
                   variant="outline"
                   onClick={handleDeselectAll}
                   disabled={selectedFiles.size === 0}
+                  aria-label="Deselect all files"
                 >
                   Deselect All
                 </Button>
-                <div className="flex-1" />
-                <Badge variant="secondary" className="px-3 py-2">
+                <div className="flex-1 hidden sm:block" />
+                <Badge variant="secondary" className="px-3 py-2" role="status" aria-live="polite">
                   {selectedFiles.size} file(s) selected for removal
                 </Badge>
                 <Button
                   onClick={handleDownload}
                   disabled={selectedFiles.size === 0 || isDownloading}
                   size="lg"
+                  aria-label={`Download cleaned files archive with ${selectedFiles.size} files removed`}
                 >
                   {isDownloading ? (
                     <>
@@ -363,7 +366,7 @@ export default function ReviewPage() {
 
           {/* Duplicate Groups */}
           {duplicateGroups.length > 0 ? (
-            <Card>
+            <Card className="transition-all duration-200 hover:shadow-md">
               <CardHeader>
                 <CardTitle>Duplicate Groups</CardTitle>
                 <CardDescription>
@@ -371,11 +374,27 @@ export default function ReviewPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <GroupAccordion
-                  groups={duplicateGroups as DedupeGroup[]}
-                  selectedFiles={selectedFiles}
-                  onFileSelect={toggleFileSelection}
-                />
+                {duplicateGroups.length > 10 ? (
+                  <PaginatedList
+                    items={duplicateGroups as DedupeGroup[]}
+                    itemsPerPage={10}
+                    renderItem={(group) => (
+                      <div className="mb-4">
+                        <GroupAccordion
+                          groups={[group]}
+                          selectedFiles={selectedFiles}
+                          onFileSelect={toggleFileSelection}
+                        />
+                      </div>
+                    )}
+                  />
+                ) : (
+                  <GroupAccordion
+                    groups={duplicateGroups as DedupeGroup[]}
+                    selectedFiles={selectedFiles}
+                    onFileSelect={toggleFileSelection}
+                  />
+                )}
               </CardContent>
             </Card>
           ) : (

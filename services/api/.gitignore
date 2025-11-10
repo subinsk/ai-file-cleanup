@@ -32,6 +32,7 @@ env/
 # Uploads
 uploads/
 *.tmp
+temp_files/
 
 # IDE
 .vscode/

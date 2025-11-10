@@ -1,11 +1,14 @@
 """Desktop app endpoints"""
 import logging
+import os
 from typing import List, Dict, Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from app.core.database import get_db
-from app.api.dedupe import _process_real_file, _find_duplicate_groups
+from app.api.dedupe import _find_duplicate_groups
+from app.services.file_processor import file_processor
+from app.services.ml_client import MLServiceClient
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -80,14 +83,41 @@ async def dedupe_preview(request: DedupePreviewRequest):
         all_texts = []
         all_images = []
         
+        # Initialize ML client
+        ml_client = MLServiceClient()
+        
         logger.info(f"Processing {len(request.files)} files for desktop app")
         logger.info(f"Files received: {[f.get('name') for f in request.files]}")
         
         # Process each file
         for i, file_data in enumerate(request.files):
             try:
-                # Process files using real file processing
-                file_result = await _process_real_file(file_data, i)
+                filename = file_data.get('name', f'file_{i}')
+                file_path = file_data.get('path', '')
+                file_size = file_data.get('size', 0)
+                mime_type = file_data.get('type', 'application/octet-stream')
+                
+                # Read file content from path
+                if not file_path or not os.path.exists(file_path):
+                    raise FileNotFoundError(f"File not found: {file_path}")
+                
+                with open(file_path, 'rb') as f:
+                    file_content = f.read()
+                
+                # Process file using file processor
+                file_result = await file_processor.process_file(
+                    file_data=file_content,
+                    filename=filename,
+                    mime_type=mime_type
+                )
+                
+                # Add file metadata
+                file_result['id'] = f"file_{i}"
+                file_result['fileName'] = filename
+                file_result['sizeBytes'] = file_size
+                file_result['mimeType'] = mime_type
+                file_result['path'] = file_path
+                
                 processed_files.append(file_result)
                 
                 # Collect text and image data for ML processing
@@ -97,26 +127,72 @@ async def dedupe_preview(request: DedupePreviewRequest):
                     all_images.append(file_result['base64_image'])
                     
             except Exception as e:
-                logger.error(f"Failed to process file {i}: {e}")
+                logger.error(f"Failed to process file {i}: {e}", exc_info=True)
                 # Add failed file to results
                 processed_files.append({
                     'id': f"file_{i}",
-                    'name': file_data.get('name', f'file_{i}'),
-                    'size': file_data.get('size', 0),
-                    'type': file_data.get('type', 'application/octet-stream'),
+                    'fileName': file_data.get('name', f'file_{i}'),
+                    'sizeBytes': file_data.get('size', 0),
+                    'mimeType': file_data.get('type', 'application/octet-stream'),
                     'success': False,
                     'error': str(e)
                 })
         
-        # Generate embeddings for text and images (mock for now)
+        # Generate embeddings for text and images with SHA-256 caching
         text_embeddings = []
         image_embeddings = []
+        
+        if all_texts:
+            try:
+                from app.services.embedding_cache import embedding_cache
+                # Extract SHA-256 hashes for caching
+                text_hashes = []
+                for file_result in processed_files:
+                    if file_result.get('text_content'):
+                        text_hashes.append(file_result.get('sha256') or file_result.get('file_hash', ''))
+                
+                # Ensure arrays are aligned
+                if len(text_hashes) != len(all_texts):
+                    while len(text_hashes) < len(all_texts):
+                        text_hashes.append('')
+                
+                text_embeddings, _ = await embedding_cache.get_or_generate_text_embeddings(
+                    all_texts, text_hashes
+                )
+            except Exception as e:
+                logger.error(f"Text embedding generation failed: {e}")
+                try:
+                    text_embeddings = await ml_client.generate_text_embeddings(all_texts)
+                except:
+                    pass
+        
+        if all_images:
+            try:
+                from app.services.embedding_cache import embedding_cache
+                # Extract SHA-256 hashes for caching
+                image_hashes = []
+                for file_result in processed_files:
+                    if file_result.get('base64_image'):
+                        image_hashes.append(file_result.get('sha256') or file_result.get('file_hash', ''))
+                
+                # Ensure arrays are aligned
+                if len(image_hashes) != len(all_images):
+                    while len(image_hashes) < len(all_images):
+                        image_hashes.append('')
+                
+                image_embeddings, _ = await embedding_cache.get_or_generate_image_embeddings(
+                    all_images, image_hashes
+                )
+            except Exception as e:
+                logger.error(f"Image embedding generation failed: {e}")
+                try:
+                    image_embeddings = await ml_client.generate_image_embeddings(all_images)
+                except:
+                    pass
         
         # Find duplicate groups using similarity
         groups = await _find_duplicate_groups(processed_files, text_embeddings, image_embeddings)
         logger.info(f"Found {len(groups)} duplicate groups")
-        for i, group in enumerate(groups):
-            logger.info(f"Group {i}: {group.get('keepFile', {}).get('name')} with {len(group.get('duplicates', []))} duplicates")
         
         # Calculate processing statistics
         processing_stats = {

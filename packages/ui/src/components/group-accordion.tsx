@@ -50,7 +50,7 @@ const AccordionContent = React.forwardRef<
 >(({ className, children, ...props }, ref) => (
   <AccordionPrimitive.Content
     ref={ref}
-    className="overflow-hidden text-sm transition-all data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down"
+    className="overflow-hidden text-sm transition-all duration-300 ease-in-out data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down"
     {...props}
   >
     <div className={cn('pb-4 pt-0', className)}>{children}</div>
@@ -73,7 +73,11 @@ export function GroupAccordion({
   }
 
   return (
-    <Accordion type="multiple" className={cn('w-full', className)}>
+    <Accordion
+      type="multiple"
+      className={cn('w-full', className)}
+      aria-label="Duplicate file groups"
+    >
       {groups.map((group) => {
         // Safely handle potentially undefined files
         const allFiles = [group.keepFile, ...group.duplicates.map((d) => d.file)].filter(
@@ -94,15 +98,27 @@ export function GroupAccordion({
 
         return (
           <AccordionItem key={group.id} value={group.id}>
-            <AccordionTrigger>
+            <AccordionTrigger
+              aria-label={`Duplicate group ${group.groupIndex + 1}: ${allFiles.length} files, can save ${formatBytes(group.totalSizeSaved)}`}
+            >
               <div className="flex items-center gap-3 flex-1 mr-4">
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary">{allFiles.length} files</Badge>
+                <div
+                  className="flex items-center gap-2"
+                  aria-label={`${allFiles.length} files in this group`}
+                >
+                  <Badge variant="secondary" aria-hidden="true">
+                    {allFiles.length} files
+                  </Badge>
                   <SimilarityBadge similarity={avgSimilarity} />
                 </div>
-                <div className="text-sm text-muted-foreground">
+                <div
+                  className="text-sm text-muted-foreground"
+                  aria-label={`Total size: ${formatBytes(totalSize)}, can save: ${formatBytes(group.totalSizeSaved)}`}
+                >
                   <span>Total: {formatBytes(totalSize)}</span>
-                  <span className="mx-2">•</span>
+                  <span className="mx-2" aria-hidden="true">
+                    •
+                  </span>
                   <span className="text-destructive">
                     Can save: {formatBytes(group.totalSizeSaved)}
                   </span>
@@ -113,23 +129,40 @@ export function GroupAccordion({
             <AccordionContent>
               <div className="space-y-4">
                 <div>
-                  <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
-                    <span className="text-green-600">✓</span> Keep this file
+                  <h4
+                    className="text-sm font-medium mb-2 flex items-center gap-2"
+                    id={`keep-file-${group.id}`}
+                  >
+                    <span className="text-green-600" aria-hidden="true">
+                      ✓
+                    </span>{' '}
+                    Keep this file
                   </h4>
                   <FileCard
                     file={group.keepFile}
                     showCheckbox={false}
                     className="bg-green-50 dark:bg-green-950/20"
+                    aria-labelledby={`keep-file-${group.id}`}
                   />
                 </div>
 
                 {group.duplicates.length > 0 && (
                   <div>
-                    <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
-                      <span className="text-destructive">×</span> Duplicates (
-                      {group.duplicates.length})
+                    <h4
+                      className="text-sm font-medium mb-2 flex items-center gap-2"
+                      id={`duplicates-${group.id}`}
+                    >
+                      <span className="text-destructive" aria-hidden="true">
+                        ×
+                      </span>{' '}
+                      Duplicates ({group.duplicates.length})
                     </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div
+                      className="grid grid-cols-1 md:grid-cols-2 gap-3"
+                      role="list"
+                      aria-labelledby={`duplicates-${group.id}`}
+                      aria-label={`${group.duplicates.length} duplicate files`}
+                    >
                       {group.duplicates.map((duplicate) => {
                         // Skip if file is undefined
                         if (!duplicate.file) {
@@ -137,15 +170,16 @@ export function GroupAccordion({
                           return null;
                         }
                         return (
-                          <FileCard
-                            key={duplicate.file.id}
-                            file={duplicate.file}
-                            selected={selectedFiles.has(duplicate.file.id)}
-                            onSelectChange={(selected) =>
-                              onFileSelect?.(duplicate.file.id, selected)
-                            }
-                            className="bg-destructive/5"
-                          />
+                          <div key={duplicate.file.id} role="listitem">
+                            <FileCard
+                              file={duplicate.file}
+                              selected={selectedFiles.has(duplicate.file.id)}
+                              onSelectChange={(selected) =>
+                                onFileSelect?.(duplicate.file.id, selected)
+                              }
+                              className="bg-destructive/5"
+                            />
+                          </div>
                         );
                       })}
                     </div>

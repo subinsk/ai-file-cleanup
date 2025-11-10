@@ -123,7 +123,14 @@ class FileProcessor:
                     'file_type': 'image'
                 }
             
-            return {
+            # Extract resolution from metadata for tie-breaker logic
+            resolution = None
+            if 'original_size' in image_result['metadata']:
+                orig_size = image_result['metadata']['original_size']
+                if isinstance(orig_size, (list, tuple)) and len(orig_size) == 2:
+                    resolution = {'width': orig_size[0], 'height': orig_size[1]}
+            
+            result = {
                 'success': True,
                 'file_hash': file_hash,
                 'filename': filename,
@@ -139,6 +146,12 @@ class FileProcessor:
                     'features_extracted': True
                 }
             }
+            
+            # Add resolution for tie-breaker logic
+            if resolution:
+                result['resolution'] = resolution
+            
+            return result
             
         except Exception as e:
             logger.error(f"Image processing failed for {filename}: {e}")

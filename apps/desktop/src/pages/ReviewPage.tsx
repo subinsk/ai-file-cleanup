@@ -46,8 +46,51 @@ export default function ReviewPage({ onBack }: ReviewPageProps) {
     setError('');
 
     try {
-      const filesToDelete = Array.from(selectedFiles);
-      await window.electronAPI.moveToTrash(filesToDelete);
+      // Map selected file IDs to actual file paths
+      const filePathsToDelete: string[] = [];
+
+      // Check all groups for files matching the selected IDs
+      for (const group of groups) {
+        // Check duplicates
+        if (group.duplicates) {
+          for (const duplicate of group.duplicates) {
+            if (duplicate.file?.id && selectedFiles.has(duplicate.file.id)) {
+              // Get the file path - check multiple possible locations
+              const fileObj = duplicate.file as any;
+              const filePath = fileObj.path || fileObj.filePath || fileObj.file?.path;
+
+              if (filePath && typeof filePath === 'string' && filePath.trim().length > 0) {
+                filePathsToDelete.push(filePath);
+                console.log('Found file path for deletion:', filePath);
+              } else {
+                console.warn('File path not found for file:', fileObj);
+                console.warn('Available keys:', Object.keys(fileObj));
+              }
+            }
+          }
+        }
+        // Check keepFile (though we probably don't want to delete the keep file)
+        // But if it's selected, we should handle it
+        if (group.keepFile?.id && selectedFiles.has(group.keepFile.id)) {
+          const fileObj = group.keepFile as any;
+          const filePath = fileObj.path || fileObj.filePath || fileObj.file?.path;
+
+          if (filePath && typeof filePath === 'string' && filePath.trim().length > 0) {
+            filePathsToDelete.push(filePath);
+            console.log('Found keepFile path for deletion:', filePath);
+          } else {
+            console.warn('File path not found for keepFile:', fileObj);
+            console.warn('Available keys:', Object.keys(fileObj));
+          }
+        }
+      }
+
+      if (filePathsToDelete.length === 0) {
+        throw new Error('No valid file paths found for selected files');
+      }
+
+      console.log('Moving files to trash:', filePathsToDelete);
+      await window.electronAPI.moveToTrash(filePathsToDelete);
 
       setSuccess(true);
       setTimeout(() => {

@@ -43,6 +43,6 @@ module.exports = {
     'coverage/',
     '*.config.js',
     '*.config.ts',
+    'packages/db/scripts/*.js', // Compiled JS files
   ],
 };
-

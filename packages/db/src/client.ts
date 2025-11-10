@@ -53,30 +53,74 @@ export async function enablePgVector(): Promise<void> {
 }
 
 /**
- * Create vector similarity indexes (run after migrations)
+ * Create optimized vector similarity indexes (run after migrations)
+ * Uses HNSW indexes for better performance (PostgreSQL 12+)
+ * Falls back to IVFFlat if HNSW is not available
  */
 export async function createVectorIndexes(): Promise<void> {
   try {
-    // Create IVFFlat index for text embeddings (cosine similarity)
+    // Try to create HNSW indexes (faster, better for similarity search)
+    try {
+      // HNSW index for text embeddings
+      await prisma.$executeRawUnsafe(`
+        CREATE INDEX IF NOT EXISTS file_embeddings_embedding_hnsw_idx 
+        ON file_embeddings 
+        USING hnsw (embedding vector_cosine_ops)
+        WITH (m = 16, ef_construction = 64)
+      `);
+
+      // HNSW index for image embeddings
+      await prisma.$executeRawUnsafe(`
+        CREATE INDEX IF NOT EXISTS file_embeddings_embedding_img_hnsw_idx 
+        ON file_embeddings 
+        USING hnsw (embedding_img vector_cosine_ops)
+        WITH (m = 16, ef_construction = 64)
+      `);
+
+      console.log('HNSW vector indexes created successfully');
+    } catch (hnswError) {
+      // Fallback to IVFFlat if HNSW is not supported
+      console.warn('HNSW not available, using IVFFlat indexes:', hnswError);
+
+      await prisma.$executeRawUnsafe(`
+        CREATE INDEX IF NOT EXISTS file_embeddings_embedding_idx 
+        ON file_embeddings 
+        USING ivfflat (embedding vector_cosine_ops)
+        WITH (lists = 100)
+      `);
+
+      await prisma.$executeRawUnsafe(`
+        CREATE INDEX IF NOT EXISTS file_embeddings_embedding_img_idx 
+        ON file_embeddings 
+        USING ivfflat (embedding_img vector_cosine_ops)
+        WITH (lists = 100)
+      `);
+
+      console.log('IVFFlat vector indexes created successfully');
+    }
+
+    // Add index on kind for faster filtering
     await prisma.$executeRawUnsafe(`
-      CREATE INDEX IF NOT EXISTS file_embeddings_embedding_idx 
-      ON file_embeddings 
-      USING ivfflat (embedding vector_cosine_ops)
-      WITH (lists = 100)
+      CREATE INDEX IF NOT EXISTS file_embeddings_kind_idx 
+      ON file_embeddings(kind)
     `);
 
-    // Create IVFFlat index for image embeddings (cosine similarity)
+    // Add partial indexes for better query performance
     await prisma.$executeRawUnsafe(`
-      CREATE INDEX IF NOT EXISTS file_embeddings_embedding_img_idx 
-      ON file_embeddings 
-      USING ivfflat (embedding_img vector_cosine_ops)
-      WITH (lists = 100)
+      CREATE INDEX IF NOT EXISTS file_embeddings_kind_text_idx 
+      ON file_embeddings(kind) 
+      WHERE kind = 'text' AND embedding IS NOT NULL
     `);
 
-    console.log('Vector indexes created successfully');
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS file_embeddings_kind_image_idx 
+      ON file_embeddings(kind) 
+      WHERE kind = 'image' AND embedding_img IS NOT NULL
+    `);
+
+    console.log('All vector indexes created successfully');
   } catch (error) {
     console.error('Failed to create vector indexes:', error);
     throw error;
   }
 }
-

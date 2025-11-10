@@ -53,12 +53,15 @@ export function FileCard({
         selected && 'ring-2 ring-primary',
         className
       )}
+      role="article"
+      aria-label={`File: ${fileName}, ${formatBytes(sizeBytes)}, ${fileType} type`}
     >
       {showCheckbox && (
         <div className="absolute top-3 right-3 z-10">
           <Checkbox
             checked={selected}
             onCheckedChange={(checked) => onSelectChange?.(checked as boolean)}
+            aria-label={`Select ${fileName} for removal`}
           />
         </div>
       )}
@@ -72,12 +75,21 @@ export function FileCard({
           </div>
 
           <div className="flex-1 min-w-0">
-            <h3 className="font-medium text-sm truncate" title={fileName}>
+            <h3
+              className="font-medium text-sm truncate"
+              title={fileName}
+              id={`file-name-${file.id}`}
+            >
               {fileName}
             </h3>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-xs text-muted-foreground">{formatBytes(sizeBytes)}</span>
-              <Badge variant="outline" className="text-xs">
+            <div className="flex items-center gap-2 mt-1" aria-label="File details">
+              <span
+                className="text-xs text-muted-foreground"
+                aria-label={`File size: ${formatBytes(sizeBytes)}`}
+              >
+                {formatBytes(sizeBytes)}
+              </span>
+              <Badge variant="outline" className="text-xs" aria-label={`File type: ${fileType}`}>
                 {fileType}
               </Badge>
             </div>

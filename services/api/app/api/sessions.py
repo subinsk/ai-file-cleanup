@@ -4,6 +4,7 @@ Handles file uploads to temporary storage and session creation
 """
 import os
 import logging
+from pathlib import Path
 from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, BackgroundTasks
 from pydantic import BaseModel
@@ -47,11 +48,14 @@ async def upload_files_to_session(
         
         logger.info(f"Created session {session.session_id} for user {user.email}")
         
+        # temp_dir is already set to absolute path in create_session
+        logger.info(f"Saving files to: {session.temp_dir} (absolute: {session.temp_dir.is_absolute()})")
+        
         # Save uploaded files to session directory
         uploaded_count = 0
         for file in files:
             try:
-                # Save file to session temp directory
+                # Save file to session temp directory (use absolute path)
                 file_path = session.temp_dir / file.filename
                 
                 # Read file content
@@ -62,10 +66,10 @@ async def upload_files_to_session(
                     f.write(content)
                 
                 uploaded_count += 1
-                logger.info(f"Saved file {file.filename} to session {session.session_id}")
+                logger.info(f"Saved file {file.filename} ({len(content)} bytes) to {file_path}")
                 
             except Exception as e:
-                logger.error(f"Failed to save file {file.filename}: {e}")
+                logger.error(f"Failed to save file {file.filename}: {e}", exc_info=True)
                 continue
         
         if uploaded_count == 0:
@@ -220,21 +224,97 @@ async def cleanup_session_files(
         if not selected_file_ids:
             raise HTTPException(status_code=400, detail="No files selected for removal")
         
+        # Resolve temp_dir path first
+        temp_dir_path = session.temp_dir
+        if isinstance(temp_dir_path, str):
+            temp_dir_path = Path(temp_dir_path)
+        
+        # Fallback: if somehow it's still relative, make it absolute
+        if not temp_dir_path.is_absolute():
+            temp_dir_path = session_manager.temp_base_dir / temp_dir_path.name
+            logger.warning(f"temp_dir was relative, converted to: {temp_dir_path}")
+        
+        logger.info(f"Session temp_dir: {temp_dir_path} (exists: {temp_dir_path.exists()})")
+        
         # Create cleaned files by excluding selected duplicates
-        cleaned_files = []
+        # selected_file_ids contains files to REMOVE, so we keep everything else
+        selected_file_ids_set = set(selected_file_ids)
         files_to_keep = []
         
         # Get all files from duplicate groups
         for group in session.duplicate_groups:
-            # Keep the first file (original)
-            if group.get('files') and len(group['files']) > 0:
-                original_file = group['files'][0]
-                files_to_keep.append(original_file)
+            # Add keepFile (the file we're keeping from this group)
+            if group.get('keepFile'):
+                keep_file = group['keepFile']
+                keep_file_id = keep_file.get('id') or keep_file.get('fileName') or keep_file.get('name')
+                # Only add if it's NOT in the selected files to remove
+                if keep_file_id and keep_file_id not in selected_file_ids_set:
+                    files_to_keep.append(keep_file)
+            
+            # Add duplicates that are NOT selected for removal
+            for duplicate in group.get('duplicates', []):
+                if duplicate.get('file'):
+                    dup_file = duplicate['file']
+                    dup_file_id = dup_file.get('id') or dup_file.get('fileName') or dup_file.get('name')
+                    # Only add if it's NOT in the selected files to remove
+                    if dup_file_id and dup_file_id not in selected_file_ids_set:
+                        files_to_keep.append(dup_file)
+        
+        # Also include unique files (files with no duplicates)
+        # Get all files from the temp directory that aren't in any duplicate group
+        if temp_dir_path.exists():
+            all_uploaded_files = [f for f in temp_dir_path.iterdir() if f.is_file() and f.name != "results.json"]
+            
+            # Create a set of all file IDs/names that are in duplicate groups
+            files_in_groups = set()
+            for group in session.duplicate_groups:
+                if group.get('keepFile'):
+                    keep_file = group['keepFile']
+                    keep_file_id = keep_file.get('id') or keep_file.get('fileName') or keep_file.get('name')
+                    if keep_file_id:
+                        files_in_groups.add(keep_file_id)
+                        # Also add the filename
+                        if keep_file.get('fileName'):
+                            files_in_groups.add(keep_file.get('fileName'))
+                        if keep_file.get('name'):
+                            files_in_groups.add(keep_file.get('name'))
                 
-                # Add remaining files that are NOT selected for removal
-                for file_info in group['files'][1:]:
-                    if file_info.get('id') not in selected_file_ids:
-                        files_to_keep.append(file_info)
+                for dup in group.get('duplicates', []):
+                    if dup.get('file'):
+                        dup_file = dup['file']
+                        dup_file_id = dup_file.get('id') or dup_file.get('fileName') or dup_file.get('name')
+                        if dup_file_id:
+                            files_in_groups.add(dup_file_id)
+                        if dup_file.get('fileName'):
+                            files_in_groups.add(dup_file.get('fileName'))
+                        if dup_file.get('name'):
+                            files_in_groups.add(dup_file.get('name'))
+            
+            # Add files that aren't in any duplicate group and aren't selected for removal
+            for uploaded_file in all_uploaded_files:
+                file_name = uploaded_file.name
+                # Check if this file is in any group or selected for removal
+                if file_name not in files_in_groups and file_name not in selected_file_ids_set:
+                    # This is a unique file (no duplicates) - add it to keep list
+                    files_to_keep.append({
+                        'id': f"file_{file_name}",
+                        'fileName': file_name,
+                        'name': file_name,
+                        'path': str(uploaded_file)
+                    })
+                    logger.info(f"Added unique file (not in any group): {file_name}")
+        
+        logger.info(f"Reading files from temp_dir: {temp_dir_path} (exists: {temp_dir_path.exists()})")
+        if temp_dir_path.exists():
+            all_files_in_dir = list(temp_dir_path.iterdir())
+            file_list = [f.name for f in all_files_in_dir if f.is_file() and f.name != "results.json"]
+            logger.info(f"Actual files in temp_dir ({len(file_list)}): {file_list}")
+        else:
+            logger.error(f"Temp directory does not exist: {temp_dir_path}")
+            raise HTTPException(status_code=404, detail=f"Session files not found. They may have been cleaned up.")
+        
+        logger.info(f"Creating ZIP with {len(files_to_keep)} files to keep (excluding {len(selected_file_ids)} selected for removal)")
+        logger.info(f"Files to keep details: {[f.get('fileName') or f.get('name') or f.get('id') for f in files_to_keep[:5]]}")
         
         # Create ZIP file with cleaned files
         import zipfile
@@ -244,19 +324,90 @@ async def cleanup_session_files(
         temp_dir = tempfile.mkdtemp()
         zip_path = os.path.join(temp_dir, f"cleaned_files_{session_id}.zip")
         
+        # Create a mapping of all files in temp_dir by name for quick lookup
+        files_in_dir_map = {f.name: f for f in temp_dir_path.iterdir() if f.is_file() and f.name != "results.json"}
+        logger.info(f"Files in directory map ({len(files_in_dir_map)}): {list(files_in_dir_map.keys())}")
+        logger.info(f"Files to keep count: {len(files_to_keep)}")
+        
+        # If no files to keep, but we have files in directory, include all files (user selected all duplicates)
+        if len(files_to_keep) == 0 and len(files_in_dir_map) > 0:
+            logger.warning("No files in files_to_keep, but files exist in directory. Including all files.")
+            for file_name, file_path in files_in_dir_map.items():
+                files_to_keep.append({
+                    'id': f"file_{file_name}",
+                    'fileName': file_name,
+                    'name': file_name,
+                    'path': str(file_path)
+                })
+        
         with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-            for file_info in files_to_keep:
+            files_added = 0
+            seen_filenames = set()  # Track added files to avoid duplicates
+            
+            logger.info(f"Starting ZIP creation with {len(files_to_keep)} files to process")
+            
+            for idx, file_info in enumerate(files_to_keep):
                 try:
-                    # Read file from session temp directory
-                    # Try both fileName and name for compatibility
-                    filename = file_info.get('fileName') or file_info.get('name', 'unknown')
-                    file_path = session.temp_dir / filename
-                    if file_path.exists():
-                        with open(file_path, 'rb') as f:
-                            zipf.writestr(filename, f.read())
+                    # Get filename from file_info - try multiple fields
+                    filename = (file_info.get('fileName') or 
+                               file_info.get('name') or 
+                               (file_info.get('id', 'unknown').replace('file_', '') if file_info.get('id', '').startswith('file_') else file_info.get('id', 'unknown')) or 
+                               'unknown')
+                    
+                    logger.info(f"[{idx+1}/{len(files_to_keep)}] Processing: id={file_info.get('id')}, fileName={file_info.get('fileName')}, name={file_info.get('name')}, resolved_filename={filename}")
+                    
+                    # Try to find the file in the directory
+                    file_path = None
+                    
+                    # First, try exact filename match
+                    if filename in files_in_dir_map:
+                        file_path = files_in_dir_map[filename]
+                        logger.info(f"  → Exact match found: {filename}")
+                    else:
+                        # Try to match by any variation
+                        matched = False
+                        for existing_name, existing_path in files_in_dir_map.items():
+                            # Match by base name (without extension)
+                            base_name = filename.split('.')[0] if '.' in filename else filename
+                            existing_base = existing_name.split('.')[0] if '.' in existing_name else existing_name
+                            
+                            if (base_name == existing_base or
+                                existing_name == filename or
+                                (file_info.get('id') and file_info.get('id').replace('file_', '') in existing_name)):
+                                file_path = existing_path
+                                filename = existing_name  # Use the actual filename from disk
+                                matched = True
+                                logger.info(f"  → Matched by variation: {filename} (was looking for {file_info.get('fileName')})")
+                                break
+                        
+                        if not matched:
+                            logger.warning(f"  → No match found for {filename}")
+                    
+                    if file_path and file_path.exists() and file_path.is_file():
+                        # Avoid adding the same file twice
+                        if filename not in seen_filenames:
+                            with open(file_path, 'rb') as f:
+                                file_content = f.read()
+                            zipf.writestr(filename, file_content)
+                            files_added += 1
+                            seen_filenames.add(filename)
+                            logger.info(f"  ✓ Added {filename} ({len(file_content)} bytes) to ZIP")
+                        else:
+                            logger.warning(f"  ⊗ Skipping duplicate: {filename}")
+                    else:
+                        logger.warning(f"  ✗ File not found: {filename}. Available: {list(files_in_dir_map.keys())[:5]}...")
+                        
                 except Exception as e:
-                    logger.error(f"Failed to add file {filename} to ZIP: {e}")
+                    logger.error(f"Failed to add file {file_info.get('fileName', 'unknown')} to ZIP: {e}", exc_info=True)
                     continue
+            
+            if files_added == 0:
+                logger.error(f"No files were added to ZIP! files_to_keep count: {len(files_to_keep)}")
+                logger.error(f"Available files in temp_dir: {list(files_in_dir_map.keys())}")
+                logger.error(f"Files to keep IDs/names: {[f.get('id') or f.get('fileName') or f.get('name') for f in files_to_keep]}")
+                raise HTTPException(status_code=500, detail="No files could be added to ZIP. Check server logs for details.")
+            
+            logger.info(f"Successfully created ZIP with {files_added} files")
         
         # Return file as streaming response
         from fastapi.responses import StreamingResponse

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { ErrorBoundary } from '@ai-cleanup/ui';
 import { useAuthStore, useLicenseStore } from './lib/store';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
@@ -90,23 +91,23 @@ function App() {
     );
   }
 
-  if (currentPage === 'login') {
-    return <LoginPage onLoginSuccess={handleLoginSuccess} onGoToSignup={handleGoToSignup} />;
-  }
+  return (
+    <ErrorBoundary>
+      {currentPage === 'login' && (
+        <LoginPage onLoginSuccess={handleLoginSuccess} onGoToSignup={handleGoToSignup} />
+      )}
 
-  if (currentPage === 'signup') {
-    return <SignupPage onSignupSuccess={handleSignupSuccess} onGoToLogin={handleGoToLogin} />;
-  }
+      {currentPage === 'signup' && (
+        <SignupPage onSignupSuccess={handleSignupSuccess} onGoToLogin={handleGoToLogin} />
+      )}
 
-  if (currentPage === 'license') {
-    return <LicensePage onValidated={handleLicenseValidated} />;
-  }
+      {currentPage === 'license' && <LicensePage onValidated={handleLicenseValidated} />}
 
-  if (currentPage === 'review') {
-    return <ReviewPage onBack={handleBackToScan} />;
-  }
+      {currentPage === 'review' && <ReviewPage onBack={handleBackToScan} />}
 
-  return <ScanPage onStartReview={handleStartReview} />;
+      {currentPage === 'scan' && <ScanPage onStartReview={handleStartReview} />}
+    </ErrorBoundary>
+  );
 }
 
 export default App;

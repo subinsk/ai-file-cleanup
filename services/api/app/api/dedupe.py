@@ -8,6 +8,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from app.core.config import settings
 from app.middleware.auth import get_current_user
+from app.middleware.validation import validate_file_upload
 from app.services.file_processor import file_processor
 from app.services.ml_client import MLServiceClient
 from app.services.zip_service import zip_service
@@ -48,6 +49,18 @@ async def preview_duplicates(
     This endpoint processes uploaded files, generates embeddings,
     and finds duplicate groups using AI similarity detection.
     """
+    # Validate file upload
+    validation_result = validate_file_upload(
+        request.files,
+        max_files=100,
+        max_file_size=50 * 1024 * 1024  # 50MB per file
+    )
+    
+    if not validation_result['valid']:
+        raise HTTPException(
+            status_code=422,
+            detail={'errors': validation_result['errors']}
+        )
     try:
         upload_id = str(uuid.uuid4())
         processed_files = []
@@ -82,23 +95,69 @@ async def preview_duplicates(
                     'error': str(e)
                 })
         
-        # Generate embeddings for text and images
+        # Generate embeddings for text and images with SHA-256 caching
         text_embeddings = []
         image_embeddings = []
         
         if all_texts:
             try:
-                text_embeddings = await ml_client.generate_text_embeddings(all_texts)
-                logger.info(f"Generated {len(text_embeddings)} text embeddings")
+                # Extract SHA-256 hashes for caching (must align with all_texts)
+                text_hashes = []
+                for file_result in processed_files:
+                    if file_result.get('text_content'):
+                        text_hashes.append(file_result.get('sha256') or file_result.get('file_hash', ''))
+                
+                # Ensure arrays are aligned
+                if len(text_hashes) != len(all_texts):
+                    logger.warning(f"Hash count ({len(text_hashes)}) doesn't match text count ({len(all_texts)}), using empty hashes")
+                    # Pad with empty strings if needed
+                    while len(text_hashes) < len(all_texts):
+                        text_hashes.append('')
+                
+                # Use embedding cache with batch processing
+                from app.services.embedding_cache import embedding_cache
+                text_embeddings, cache_hits = await embedding_cache.get_or_generate_text_embeddings(
+                    all_texts, text_hashes
+                )
+                cache_hit_count = sum(cache_hits)
+                logger.info(f"Generated {len(text_embeddings)} text embeddings ({cache_hit_count} from cache, {len(text_embeddings) - cache_hit_count} new)")
             except Exception as e:
                 logger.error(f"Text embedding generation failed: {e}")
+                # Fallback to direct generation
+                try:
+                    text_embeddings = await ml_client.generate_text_embeddings(all_texts)
+                except:
+                    pass
         
         if all_images:
             try:
-                image_embeddings = await ml_client.generate_image_embeddings(all_images)
-                logger.info(f"Generated {len(image_embeddings)} image embeddings")
+                # Extract SHA-256 hashes for caching (must align with all_images)
+                image_hashes = []
+                for file_result in processed_files:
+                    if file_result.get('base64_image'):
+                        image_hashes.append(file_result.get('sha256') or file_result.get('file_hash', ''))
+                
+                # Ensure arrays are aligned
+                if len(image_hashes) != len(all_images):
+                    logger.warning(f"Hash count ({len(image_hashes)}) doesn't match image count ({len(all_images)}), using empty hashes")
+                    # Pad with empty strings if needed
+                    while len(image_hashes) < len(all_images):
+                        image_hashes.append('')
+                
+                # Use embedding cache with batch processing
+                from app.services.embedding_cache import embedding_cache
+                image_embeddings, cache_hits = await embedding_cache.get_or_generate_image_embeddings(
+                    all_images, image_hashes
+                )
+                cache_hit_count = sum(cache_hits)
+                logger.info(f"Generated {len(image_embeddings)} image embeddings ({cache_hit_count} from cache, {len(image_embeddings) - cache_hit_count} new)")
             except Exception as e:
                 logger.error(f"Image embedding generation failed: {e}")
+                # Fallback to direct generation
+                try:
+                    image_embeddings = await ml_client.generate_image_embeddings(all_images)
+                except:
+                    pass
         
         # Find duplicate groups using similarity
         groups = await _find_duplicate_groups(processed_files, text_embeddings, image_embeddings)
@@ -154,7 +213,7 @@ async def _process_real_file(file_data: Dict[str, Any], index: int) -> Dict[str,
                     logger.info(f"Successfully read file from user path: {file_path} ({len(file_content)} bytes)")
                 except Exception as e:
                     logger.error(f"Failed to read file from user path {file_path}: {e}")
-                    file_content = f"Error reading file: {e}".encode('utf-8')
+                    raise FileNotFoundError(f"Failed to read file from path {file_path}: {e}")
             else:
                 # Fallback to test_files directory for testing
                 test_file_path = f"test_files/{filename}"
@@ -163,9 +222,9 @@ async def _process_real_file(file_data: Dict[str, Any], index: int) -> Dict[str,
                         file_content = f.read()
                     logger.info(f"Successfully read file from test_files: {test_file_path}")
                 else:
-                    # Create mock content for testing
-                    logger.warning(f"Could not find file {filename} at user path {file_path} or test_files")
-                    file_content = f"Mock content for {filename}".encode('utf-8')
+                    # File not found - return error instead of mock data
+                    logger.error(f"File not found: {filename} at path {file_path} or test_files")
+                    raise FileNotFoundError(f"File not found: {filename}")
         
         # Process the file using the real file processor
         result = await file_processor.process_file(
@@ -239,19 +298,20 @@ async def _find_duplicate_groups(
     group_index = 0
     for file_hash, hash_group in hash_groups.items():
         if len(hash_group) > 1:
-            # Sort by file size (keep the largest file)
-            hash_group.sort(key=lambda x: x.get('size', 0), reverse=True)
+            # Use tie-breaker logic to select keep file
+            from app.services.tie_breaker import select_keep_file
+            kept_file = select_keep_file(hash_group)
             
-            kept_file = hash_group[0]
             duplicates = []
-            
-            for duplicate_file in hash_group[1:]:
-                duplicates.append({
-                    'file': duplicate_file,
-                    'similarity': 1.0,  # Exact hash match
-                    'reason': 'Exact hash match',
-                    'isKept': False
-                })
+            for duplicate_file in hash_group:
+                if duplicate_file.get('id') != kept_file.get('id') and \
+                   duplicate_file.get('fileName') != kept_file.get('fileName'):
+                    duplicates.append({
+                        'file': duplicate_file,
+                        'similarity': 1.0,  # Exact hash match
+                        'reason': 'Exact hash match',
+                        'isKept': False
+                    })
             
             groups.append({
                 'id': f'group_{group_index}',
@@ -259,7 +319,7 @@ async def _find_duplicate_groups(
                 'keepFile': kept_file,
                 'duplicates': duplicates,
                 'reason': 'Exact hash match',
-                'totalSizeSaved': sum(d['file'].get('size', 0) for d in duplicates)
+                'totalSizeSaved': sum(d['file'].get('size', 0) or d['file'].get('sizeBytes', 0) for d in duplicates)
             })
             group_index += 1
     
@@ -278,19 +338,20 @@ async def _find_duplicate_groups(
         # Create groups for files with same text content
         for text_content, text_group in text_content_groups.items():
             if len(text_group) > 1:
-                # Sort by file size (keep the largest file)
-                text_group.sort(key=lambda x: x.get('size', 0), reverse=True)
+                # Use tie-breaker logic to select keep file
+                from app.services.tie_breaker import select_keep_file
+                kept_file = select_keep_file(text_group)
                 
-                kept_file = text_group[0]
                 duplicates = []
-                
-                for duplicate_file in text_group[1:]:
-                    duplicates.append({
-                        'file': duplicate_file,
-                        'similarity': 1.0,  # Exact text match
-                        'reason': 'Exact text content match',
-                        'isKept': False
-                    })
+                for duplicate_file in text_group:
+                    if duplicate_file.get('id') != kept_file.get('id') and \
+                       duplicate_file.get('fileName') != kept_file.get('fileName'):
+                        duplicates.append({
+                            'file': duplicate_file,
+                            'similarity': 1.0,  # Exact text match
+                            'reason': 'Exact text content match',
+                            'isKept': False
+                        })
                 
                 groups.append({
                     'id': f'group_{group_index}',
@@ -298,7 +359,7 @@ async def _find_duplicate_groups(
                     'keepFile': kept_file,
                     'duplicates': duplicates,
                     'reason': 'Exact text content match',
-                    'totalSizeSaved': sum(d['file'].get('size', 0) for d in duplicates)
+                    'totalSizeSaved': sum(d['file'].get('size', 0) or d['file'].get('sizeBytes', 0) for d in duplicates)
                 })
                 group_index += 1
     
