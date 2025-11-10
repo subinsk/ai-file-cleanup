@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
     "target": "ES2022",
     "lib": ["ES2022"],
     "module": "ESNext",
@@ -34,7 +35,13 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
     "skipLibCheck": true,
-    "incremental": true
+    "incremental": true,
+    "paths": {
+      "@ai-cleanup/types": ["packages/types/src"],
+      "@ai-cleanup/core": ["packages/core/src"],
+      "@ai-cleanup/ui": ["packages/ui/src"],
+      "@ai-cleanup/db": ["packages/db/src"]
+    }
   },
   "exclude": ["node_modules", "dist", "build", ".next", "out"]
 }
