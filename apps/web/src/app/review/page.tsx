@@ -34,6 +34,7 @@ export default function ReviewPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDownloading, setIsDownloading] = useState(false);
   const [error, setError] = useState('');
+  const [visibleGroupCount, setVisibleGroupCount] = useState<number>(10);
 
   useEffect(() => {
     if (!sessionId) {
@@ -61,6 +62,7 @@ export default function ReviewPage() {
   const totalDuplicates = groups.reduce((sum, g) => sum + g.duplicates.length, 0);
   const totalSizeSaved = groups.reduce((sum, g) => sum + g.totalSizeSaved, 0);
   const allDuplicateIds = groups.flatMap((g) => g.duplicates.map((d) => d.file.id));
+  const displayedGroups = groups.slice(0, visibleGroupCount);
 
   const handleSelectAllDuplicates = () => {
     selectAll(allDuplicateIds);
@@ -229,10 +231,21 @@ export default function ReviewPage() {
               </CardHeader>
               <CardContent>
                 <GroupAccordion
-                  groups={groups}
+                  groups={displayedGroups}
                   selectedFiles={selectedFiles}
                   onFileSelect={toggleFileSelection}
                 />
+
+                {groups.length > visibleGroupCount && (
+                  <div className="pt-4 flex justify-center">
+                    <Button
+                      variant="ghost"
+                      onClick={() => setVisibleGroupCount((c) => c + 10)}
+                    >
+                      Load more groups
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ) : (
