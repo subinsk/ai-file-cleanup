@@ -5,6 +5,7 @@
   "description": "AI-powered file deduplication system with web and desktop apps",
   "scripts": {
     "dev": "turbo run dev --parallel",
+    "dev:log": "powershell -ExecutionPolicy Bypass -File dev-with-logging.ps1",
     "dev:all": "turbo run dev --parallel",
     "dev:frontend": "turbo run dev --filter=@ai-cleanup/web --filter=@ai-cleanup/desktop --parallel",
     "dev:backend": "turbo run dev --filter=@ai-cleanup/api --filter=@ai-cleanup/ml-service --parallel",

@@ -72,7 +72,11 @@ That's it! This will:
 ### Start Everything
 
 ```bash
+# Development mode (no logging)
 pnpm dev
+
+# Development mode with logging (saves to logs/dev-YYYY-MM-DD-HHMM.log)
+pnpm dev:log
 ```
 
 ### Individual Services
@@ -90,6 +94,26 @@ pnpm db:push             # Push schema
 pnpm db:migrate          # Create migration
 pnpm db:seed             # Seed data
 pnpm db:studio           # Open Prisma Studio
+```
+
+### Logging
+
+Terminal output can be automatically saved to log files:
+
+```bash
+# Start with logging enabled (recommended for debugging)
+pnpm dev:log
+
+# Logs are saved to:
+# - Root: logs/dev-YYYY-MM-DD-HHMM.log (all services)
+# - API: services/api/logs/api-YYYY-MM-DD-HHMM.log
+# - ML: services/ml-service/logs/ml-service-YYYY-MM-DD-HHMM.log
+
+# Clean up old logs (removes files older than 30 days)
+.\cleanup-old-logs.bat
+
+# View detailed logging documentation
+See LOGGING.md for more information
 ```
 
 ### Build
