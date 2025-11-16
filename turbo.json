@@ -5,7 +5,7 @@
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**", ".next/**", "out/**", "build/**"],
-      "env": ["NEXT_PUBLIC_*", "VITE_*"]
+      "env": ["NEXT_PUBLIC_*", "VITE_*", "NEXTAUTH_URL", "NEXTAUTH_SECRET"]
     },
     "build:electron": {
       "outputs": ["dist/electron/**"],
