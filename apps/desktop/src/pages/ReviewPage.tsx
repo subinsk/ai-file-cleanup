@@ -92,10 +92,62 @@ export default function ReviewPage({ onBack }: ReviewPageProps) {
       console.log('Moving files to trash:', filePathsToDelete);
       await window.electronAPI.moveToTrash(filePathsToDelete);
 
+      // Remove deleted files from groups and update the state
+      const updatedGroups = groups
+        .map((group) => {
+          // Filter out deleted duplicates
+          const remainingDuplicates = group.duplicates?.filter(
+            (dup) => dup.file?.id && !selectedFiles.has(dup.file.id)
+          );
+
+          // Check if keepFile was deleted
+          const keepFileDeleted = group.keepFile?.id && selectedFiles.has(group.keepFile.id);
+
+          // If keepFile was deleted and there are duplicates, promote the first duplicate to keepFile
+          if (keepFileDeleted && remainingDuplicates && remainingDuplicates.length > 0) {
+            const newKeepFile = remainingDuplicates[0];
+            return {
+              ...group,
+              keepFile: newKeepFile.file,
+              duplicates: remainingDuplicates.slice(1),
+              totalSizeSaved: group.totalSizeSaved || 0,
+            };
+          }
+
+          // If keepFile was deleted and no duplicates remain, return null to filter out this group
+          if (keepFileDeleted) {
+            return null;
+          }
+
+          // Update the group with remaining duplicates
+          return {
+            ...group,
+            duplicates: remainingDuplicates,
+            totalSizeSaved: group.totalSizeSaved || 0,
+          };
+        })
+        .filter((group): group is NonNullable<typeof group> => {
+          // Filter out groups that have no duplicates left
+          return group !== null && (group.duplicates?.length || 0) > 0;
+        });
+
+      // Update the store with new groups
+      const scanStore = useScanStore.getState();
+      scanStore.setGroups(updatedGroups);
+
+      // Clear selected files
+      deselectAll();
+
+      // Show success message
       setSuccess(true);
       setTimeout(() => {
-        reset();
-        onBack();
+        setSuccess(false);
+
+        // Only navigate back if there are no more groups to review
+        if (updatedGroups.length === 0) {
+          reset();
+          onBack();
+        }
       }, 2000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to move files to trash');
@@ -175,7 +227,12 @@ export default function ReviewPage({ onBack }: ReviewPageProps) {
           {success && (
             <div className="flex items-start gap-3 p-4 text-sm text-green-600 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
               <FileCheck className="w-5 h-5 flex-shrink-0 mt-0.5" />
-              <span>Files moved to Recycle Bin successfully! Returning to scan page...</span>
+              <span>
+                Files moved to Recycle Bin successfully!
+                {groups.filter((g) => (g.duplicates?.length || 0) > 0).length === 0
+                  ? ' Returning to scan page...'
+                  : ' Continue reviewing remaining duplicates.'}
+              </span>
             </div>
           )}
 

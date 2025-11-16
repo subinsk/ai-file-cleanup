@@ -1,0 +1,70 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+    - generic [ref=e2]:
+        - banner [ref=e3]:
+            - navigation [ref=e4]:
+                - generic [ref=e5]:
+                    - link "AC AI File Cleanup" [ref=e7] [cursor=pointer]:
+                        - /url: /
+                        - generic [ref=e9]: AC
+                        - generic [ref=e10]: AI File Cleanup
+                    - generic [ref=e11]:
+                        - link "Upload Files" [ref=e12] [cursor=pointer]:
+                            - /url: /upload
+                            - img [ref=e13]
+                            - generic [ref=e16]: Upload Files
+                        - link "Docs" [ref=e17] [cursor=pointer]:
+                            - /url: /docs
+                        - link [ref=e18] [cursor=pointer]:
+                            - /url: /download
+                            - img [ref=e19]
+                        - generic [ref=e22]:
+                            - link "Login" [ref=e23] [cursor=pointer]:
+                                - /url: /login
+                            - link "Sign Up" [ref=e24] [cursor=pointer]:
+                                - /url: /register
+        - main [ref=e25]:
+            - generic [ref=e27]:
+                - generic [ref=e28]:
+                    - img [ref=e29]
+                    - heading "Sign in to your account" [level=2] [ref=e32]
+                    - paragraph [ref=e33]:
+                        - text: Or
+                        - link "create a new account" [ref=e34] [cursor=pointer]:
+                            - /url: /register
+                - generic [ref=e35]:
+                    - generic [ref=e36]:
+                        - generic [ref=e37]:
+                            - generic [ref=e38]: Email address
+                            - textbox "Email address" [ref=e39]
+                        - generic [ref=e40]:
+                            - generic [ref=e41]: Password
+                            - generic [ref=e42]:
+                                - textbox "Password" [ref=e43]
+                                - button [ref=e44] [cursor=pointer]:
+                                    - img [ref=e45]
+                    - generic [ref=e48]:
+                        - generic [ref=e49]:
+                            - checkbox "Remember me" [ref=e50]
+                            - generic [ref=e51]: Remember me
+                        - link "Forgot your password?" [ref=e53] [cursor=pointer]:
+                            - /url: '#'
+                    - button "Sign in" [ref=e55] [cursor=pointer]
+                - generic [ref=e56]:
+                    - generic [ref=e61]: New to AI File Cleanup?
+                    - link "Create a free account" [ref=e63] [cursor=pointer]:
+                        - /url: /register
+        - contentinfo [ref=e64]:
+            - generic [ref=e66]:
+                - paragraph [ref=e67]: © 2024 AI File Cleanup. All rights reserved.
+                - generic [ref=e68]:
+                    - link "Terms" [ref=e69] [cursor=pointer]:
+                        - /url: '#'
+                    - link "Privacy" [ref=e70] [cursor=pointer]:
+                        - /url: '#'
+                    - link "Support" [ref=e71] [cursor=pointer]:
+                        - /url: '#'
+    - alert [ref=e72]
+```

@@ -34,10 +34,28 @@ That's it! This will:
 
 ## 📖 Documentation
 
-- **[Development Guide](DEV-GUIDE.md)** - Complete development workflow
-- **[Environment Setup](ENVIRONMENT-SETUP.md)** - Configuration guide
-- **[Start Dev Servers](START-DEV-SERVERS.md)** - Manual server startup
-- **[Desktop App Setup](apps/desktop/ENV-SETUP.md)** - Desktop-specific guide
+All comprehensive documentation is available in the [`packages/docs`](packages/docs) directory:
+
+- **[00 - Architecture](packages/docs/00-architecture.md)** - System architecture and design
+- **[01 - Prerequisites](packages/docs/01-prerequisites.md)** - Requirements and setup
+- **[02 - Installation](packages/docs/02-installation.md)** - Installation guide
+- **[03 - Environment Setup](packages/docs/03-environment-setup.md)** - Configuration guide
+- **[04 - Database Setup](packages/docs/04-database-setup.md)** - Database configuration
+- **[05 - Running Project](packages/docs/05-running-project.md)** - Development workflow
+- **[06 - Deployment](packages/docs/06-deployment.md)** - Production deployment
+- **[07 - API Documentation](packages/docs/07-api-documentation.md)** - API reference
+- **[08 - User Guide](packages/docs/08-user-guide.md)** - End-user instructions
+- **[09 - Developer Setup](packages/docs/09-developer-setup.md)** - Developer onboarding
+- **[10 - Security](packages/docs/10-security.md)** - Security guidelines
+- **[11 - Testing](packages/docs/11-testing.md)** - E2E testing guide
+- **[12 - Cross-Platform Testing](packages/docs/12-cross-platform-testing.md)** - Cross-platform testing
+- **[13 - CI/CD](packages/docs/13-cicd.md)** - CI/CD configuration
+- **[14 - Windows Installer](packages/docs/14-windows-installer.md)** - Windows installer guide
+- **[15 - Logging](packages/docs/15-logging.md)** - Logging system
+- **[16 - Deployment Instructions](packages/docs/16-deployment-instructions.md)** - Deployment steps
+- **[17 - Deployment Runbook](packages/docs/17-deployment-runbook.md)** - Deployment runbook
+- **[18 - Quick Start Logging](packages/docs/18-quick-start-logging.md)** - Quick logging setup
+- **[19 - Desktop Build](packages/docs/19-desktop-build.md)** - Desktop build guide
 
 ## 🏗️ Architecture
 
@@ -113,7 +131,7 @@ pnpm dev:log
 .\cleanup-old-logs.bat
 
 # View detailed logging documentation
-See LOGGING.md for more information
+See packages/docs/15-logging.md for more information
 ```
 
 ### Build
@@ -189,7 +207,7 @@ pnpm lint
 
 ## 📝 Environment Variables
 
-See [ENVIRONMENT-SETUP.md](ENVIRONMENT-SETUP.md) for detailed configuration.
+See [Environment Setup](packages/docs/03-environment-setup.md) for detailed configuration.
 
 Quick setup:
 
@@ -219,7 +237,7 @@ cp apps/desktop/env.example apps/desktop/.env
 ## 🆘 Support
 
 - **Issues:** [GitHub Issues](your-repo-url/issues)
-- **Docs:** Check the `/docs` folder
+- **Docs:** Check the [`packages/docs`](packages/docs) folder
 - **API Docs:** http://localhost:3001/docs (when running)
 
 ---

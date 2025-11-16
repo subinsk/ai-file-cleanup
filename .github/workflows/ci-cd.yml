@@ -1,0 +1,370 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [main, develop]
+
+env:
+  NODE_VERSION: '18'
+  PYTHON_VERSION: '3.10'
+  PNPM_VERSION: '8'
+
+jobs:
+  # ============================================================================
+  # CODE QUALITY & LINTING
+  # ============================================================================
+  lint:
+    name: Lint Code
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Lint TypeScript
+        run: pnpm lint
+
+      - name: Type check
+        run: pnpm type-check
+
+  # ============================================================================
+  # UNIT TESTS
+  # ============================================================================
+  test-unit:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Install Python dependencies
+        run: |
+          cd services/api
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio
+
+      - name: Run API tests
+        run: |
+          cd services/api
+          pytest tests/ -v
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+
+  # ============================================================================
+  # E2E TESTS
+  # ============================================================================
+  test-e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Install Playwright
+        run: |
+          cd apps/web
+          pnpm exec playwright install --with-deps
+
+      - name: Start services
+        run: |
+          pnpm dev &
+          sleep 30
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+
+      - name: Run E2E tests
+        run: |
+          cd apps/web
+          pnpm exec playwright test
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report/
+          retention-days: 30
+
+  # ============================================================================
+  # BUILD WEB APP
+  # ============================================================================
+  build-web:
+    name: Build Web App
+    runs-on: ubuntu-latest
+    needs: [lint, test-unit]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build web app
+        run: |
+          cd apps/web
+          pnpm build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: web-build
+          path: apps/web/.next/
+          retention-days: 7
+
+  # ============================================================================
+  # BUILD DESKTOP APP
+  # ============================================================================
+  build-desktop:
+    name: Build Desktop App
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+
+    runs-on: ${{ matrix.os }}
+    needs: [lint, test-unit]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build desktop app
+        run: |
+          cd apps/desktop
+          pnpm build
+
+      - name: Package for Windows
+        if: matrix.os == 'windows-latest'
+        run: |
+          cd apps/desktop
+          pnpm package:win
+
+      - name: Package for macOS
+        if: matrix.os == 'macos-latest'
+        run: |
+          cd apps/desktop
+          pnpm package:mac
+
+      - name: Package for Linux
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cd apps/desktop
+          pnpm package:linux
+
+      - name: Upload desktop installers
+        uses: actions/upload-artifact@v3
+        with:
+          name: desktop-${{ matrix.os }}
+          path: apps/desktop/dist-package/
+          retention-days: 30
+
+  # ============================================================================
+  # DEPLOY WEB TO VERCEL
+  # ============================================================================
+  deploy-web:
+    name: Deploy Web App
+    runs-on: ubuntu-latest
+    needs: [build-web, test-e2e]
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: web-build
+          path: apps/web/.next/
+
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v20
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'
+          working-directory: ./apps/web
+
+  # ============================================================================
+  # DEPLOY API TO RENDER
+  # ============================================================================
+  deploy-api:
+    name: Deploy API
+    runs-on: ubuntu-latest
+    needs: [test-unit]
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Trigger Render deployment
+        run: |
+          curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{"serviceId": "${{ secrets.RENDER_API_SERVICE_ID }}"}' \
+            https://api.render.com/v1/services/${{ secrets.RENDER_API_SERVICE_ID }}/deploys
+
+  # ============================================================================
+  # DEPLOY ML SERVICE TO RENDER
+  # ============================================================================
+  deploy-ml:
+    name: Deploy ML Service
+    runs-on: ubuntu-latest
+    needs: [test-unit]
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Trigger Render deployment
+        run: |
+          curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{"serviceId": "${{ secrets.RENDER_ML_SERVICE_ID }}"}' \
+            https://api.render.com/v1/services/${{ secrets.RENDER_ML_SERVICE_ID }}/deploys
+
+  # ============================================================================
+  # CREATE GITHUB RELEASE
+  # ============================================================================
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: [build-desktop, deploy-web, deploy-api, deploy-ml]
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            desktop-windows-latest/**/*
+            desktop-macos-latest/**/*
+            desktop-ubuntu-latest/**/*
+          body: |
+            ## What's Changed
+
+            See [CHANGELOG.md](CHANGELOG.md) for details.
+
+            ## Download
+
+            - **Windows:** Download `AI-File-Cleanup-Setup-*.exe`
+            - **macOS:** Download `AI-File-Cleanup-*.dmg`
+            - **Linux:** Download `AI-File-Cleanup-*.AppImage`
+
+            ## Installation
+
+            See [USER_GUIDE.md](USER_GUIDE.md) for installation instructions.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ============================================================================
+  # NOTIFY ON COMPLETION
+  # ============================================================================
+  notify:
+    name: Notify Deployment
+    runs-on: ubuntu-latest
+    needs: [deploy-web, deploy-api, deploy-ml]
+    if: always()
+
+    steps:
+      - name: Send notification
+        run: |
+          echo "Deployment completed!"
+          echo "Web: Deployed to Vercel"
+          echo "API: Deployed to Render"
+          echo "ML: Deployed to Render"

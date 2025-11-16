@@ -30,8 +30,24 @@ export default function RegisterPage() {
       return;
     }
 
+    // Client-side password validation to match API requirements
     if (password.length < 8) {
       setError('Password must be at least 8 characters');
+      return;
+    }
+
+    if (!/[A-Z]/.test(password)) {
+      setError('Password must contain at least one uppercase letter');
+      return;
+    }
+
+    if (!/[a-z]/.test(password)) {
+      setError('Password must contain at least one lowercase letter');
+      return;
+    }
+
+    if (!/[0-9]/.test(password)) {
+      setError('Password must contain at least one digit');
       return;
     }
 
@@ -52,8 +68,46 @@ export default function RegisterPage() {
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.detail || 'Registration failed');
+        let errorMessage = 'Registration failed';
+
+        try {
+          const data = await response.json();
+
+          // Handle different error formats
+          if (data.detail) {
+            // FastAPI HTTPException format
+            if (typeof data.detail === 'string') {
+              errorMessage = data.detail;
+            } else if (Array.isArray(data.detail)) {
+              // Pydantic validation errors (422)
+              const errors = data.detail.map((err: any) => {
+                const field = err.loc ? err.loc[err.loc.length - 1] : 'field';
+                const msg = err.msg;
+
+                // Make error messages more user-friendly
+                if (msg.includes('value_error.email')) {
+                  return 'Please enter a valid email address';
+                }
+
+                return `${field}: ${msg}`;
+              });
+              errorMessage = errors.join('; ');
+            }
+          } else if (data.message) {
+            errorMessage = data.message;
+          }
+        } catch (e) {
+          // Failed to parse JSON, use status-based message
+          if (response.status === 400) {
+            errorMessage = 'Email already registered';
+          } else if (response.status === 422) {
+            errorMessage = 'Please check your input and try again';
+          } else if (response.status >= 500) {
+            errorMessage = 'Server error. Please try again later.';
+          }
+        }
+
+        throw new Error(errorMessage);
       }
 
       // Login to Python API to get access_token cookie
@@ -67,8 +121,8 @@ export default function RegisterPage() {
       });
 
       if (!loginResponse.ok) {
-        setError('Account created but login failed. Please try logging in.');
-        router.push('/login');
+        setError('Account created but auto-login failed. Please log in manually.');
+        setTimeout(() => router.push('/login'), 2000);
         return;
       }
 
@@ -80,15 +134,16 @@ export default function RegisterPage() {
       });
 
       if (result?.error) {
-        setError('Account created but login failed. Please try logging in.');
-        router.push('/login');
+        setError('Account created but auto-login failed. Please log in manually.');
+        setTimeout(() => router.push('/login'), 2000);
       } else {
         // Redirect to home
         router.push('/');
         router.refresh();
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed');
+      setError(err instanceof Error ? err.message : 'Registration failed. Please try again.');
+      console.error('Registration error:', err);
     } finally {
       setLoading(false);
     }
@@ -180,6 +235,9 @@ export default function RegisterPage() {
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Must include uppercase, lowercase, and a digit
+              </p>
             </div>
 
             <div>

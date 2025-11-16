@@ -11,7 +11,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
 from app.core.config import settings
 from app.core.database import init_db, close_db
-from app.api import auth, license, dedupe, desktop, health, files, sessions, metrics
+from app.api import auth, license, dedupe, desktop, health, files, sessions, metrics, quota
 from app.services.background_worker import background_worker
 from app.middleware.rate_limit import RateLimitMiddleware
 from app.middleware.validation import RequestValidationMiddleware
@@ -102,6 +102,7 @@ app.include_router(health.router, prefix="/health", tags=["health"])
 app.include_router(metrics.router, prefix="/metrics", tags=["metrics"])
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(license.router, prefix="/license", tags=["license"])
+app.include_router(quota.router, prefix="/quota", tags=["quota"])
 app.include_router(dedupe.router, prefix="/dedupe", tags=["dedupe"])
 app.include_router(files.router, prefix="/files", tags=["files"])
 app.include_router(sessions.router, prefix="/uploads", tags=["uploads"])

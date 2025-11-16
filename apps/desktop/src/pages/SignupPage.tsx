@@ -46,8 +46,24 @@ export default function SignupPage({ onSignupSuccess, onGoToLogin }: SignupPageP
       return;
     }
 
+    // Client-side password validation to match API requirements
     if (password.length < 8) {
       setError('Password must be at least 8 characters');
+      return;
+    }
+
+    if (!/[A-Z]/.test(password)) {
+      setError('Password must contain at least one uppercase letter');
+      return;
+    }
+
+    if (!/[a-z]/.test(password)) {
+      setError('Password must contain at least one lowercase letter');
+      return;
+    }
+
+    if (!/[0-9]/.test(password)) {
+      setError('Password must contain at least one digit');
       return;
     }
 
@@ -138,6 +154,9 @@ export default function SignupPage({ onSignupSuccess, onGoToLogin }: SignupPageP
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
+              <p className="text-xs text-muted-foreground">
+                Must be at least 8 characters with uppercase, lowercase, and a digit
+              </p>
             </div>
 
             <div className="space-y-2">

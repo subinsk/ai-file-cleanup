@@ -35,11 +35,15 @@ class Settings(BaseSettings):
             return [origin.strip() for origin in v.split(',')]
         return v
     
-    # File Upload
-    MAX_FILE_SIZE_MB: int = 10
-    MAX_TOTAL_UPLOAD_SIZE_MB: int = 100
-    MAX_FILES_PER_UPLOAD: int = 100
+    # File Upload Limits
+    MAX_FILE_SIZE_MB: int = 50  # Maximum size per file
+    MAX_TOTAL_UPLOAD_SIZE_MB: int = 500  # Maximum total upload size
+    MAX_FILES_PER_UPLOAD: int = 100  # Maximum files per upload
     UPLOAD_DIR: str = "/tmp/uploads"  # Render uses /tmp for temp storage
+    
+    # User Quotas
+    MAX_STORAGE_PER_USER_MB: int = 1000  # 1GB per user
+    MAX_UPLOADS_PER_USER: int = 50  # Maximum uploads per user
     
     # Similarity Thresholds
     EXACT_MATCH_THRESHOLD: float = 0.98
@@ -47,8 +51,12 @@ class Settings(BaseSettings):
     MEDIUM_SIMILARITY_THRESHOLD: float = 0.85
     
     # Rate Limiting
-    RATE_LIMIT_MAX: int = 100
-    RATE_LIMIT_WINDOW_SECONDS: int = 900
+    RATE_LIMIT_MAX: int = 100  # Max requests per window
+    RATE_LIMIT_WINDOW_SECONDS: int = 60  # Time window in seconds
+    RATE_LIMIT_AUTH_MAX: int = 10  # Max auth attempts per window
+    RATE_LIMIT_AUTH_WINDOW_SECONDS: int = 300  # 5 minutes
+    RATE_LIMIT_UPLOAD_MAX: int = 20  # Max uploads per window
+    RATE_LIMIT_UPLOAD_WINDOW_SECONDS: int = 300  # 5 minutes
     
     # ML Service URL (Render internal URL)
     ML_SERVICE_URL: str = "http://localhost:3002"

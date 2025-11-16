@@ -3,15 +3,20 @@
   "version": "1.0.0",
   "private": true,
   "description": "AI File Cleanup - Desktop Application",
+  "author": {
+    "name": "AI File Cleanup Team",
+    "email": "support@aifilecleanup.com"
+  },
   "main": "dist/electron/main.js",
   "scripts": {
+    "prebuild": "pnpm --filter @ai-cleanup/types build && pnpm --filter @ai-cleanup/core build && pnpm --filter @ai-cleanup/ui build",
     "dev": "pnpm build && concurrently \"npm run dev:renderer\" \"npm run watch:electron\" \"npm run dev:electron\"",
     "dev:renderer": "vite",
     "dev:electron": "wait-on dist/electron/main.js && nodemon --watch dist/electron --exec electron . --trace-warnings",
-    "build": "npm run build:renderer && npm run build:electron",
+    "build": "npm run prebuild && npm run build:renderer && npm run build:electron",
     "build:renderer": "vite build",
-    "build:electron": "tsc -p tsconfig.electron.json",
-    "watch:electron": "tsc -p tsconfig.electron.json --watch",
+    "build:electron": "webpack --config webpack.config.js",
+    "watch:electron": "webpack --config webpack.config.js --watch",
     "package": "npm run build && electron-builder",
     "package:win": "npm run build && electron-builder --win",
     "package:mac": "npm run build && electron-builder --mac",
@@ -23,6 +28,7 @@
     "@ai-cleanup/ui": "workspace:*",
     "dotenv": "^17.2.3",
     "fast-glob": "^3.3.2",
+    "glob-parent": "^6.0.2",
     "trash": "^8.1.1",
     "zustand": "^4.4.7"
   },
@@ -33,6 +39,7 @@
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.16",
     "concurrently": "^8.2.2",
+    "copy-webpack-plugin": "^11.0.0",
     "electron": "^28.0.0",
     "electron-builder": "^24.9.1",
     "electron-reload": "^2.0.0-alpha.1",
@@ -42,10 +49,13 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "tailwindcss": "^3.4.0",
+    "ts-loader": "^9.5.1",
     "typescript": "^5.3.2",
     "vite": "^5.0.8",
     "vite-plugin-electron": "^0.28.1",
-    "wait-on": "^9.0.1"
+    "wait-on": "^9.0.1",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4"
   },
   "build": {
     "appId": "com.aicleanup.desktop",
@@ -55,6 +65,8 @@
     },
     "files": [
       "dist/**/*",
+      "!dist/electron/main.js.map",
+      "!dist/electron/preload.js.map",
       "package.json",
       ".env"
     ],
@@ -69,9 +81,50 @@
     ],
     "win": {
       "target": [
-        "nsis"
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "msi",
+          "arch": [
+            "x64"
+          ]
+        }
       ],
-      "icon": "assets/icon.ico"
+      "icon": "assets/icon.ico",
+      "requestedExecutionLevel": "asInvoker",
+      "artifactName": "${productName}-${version}.${ext}",
+      "publisherName": "AI File Cleanup Team",
+      "verifyUpdateCodeSignature": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "installerHeaderIcon": "assets/icon.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "AI File Cleanup",
+      "perMachine": false,
+      "deleteAppDataOnUninstall": false,
+      "runAfterFinish": true,
+      "license": "LICENSE.txt",
+      "warningsAsErrors": false,
+      "include": "installer.nsh"
+    },
+    "msi": {
+      "oneClick": false,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "AI File Cleanup",
+      "runAfterFinish": true,
+      "upgradeCode": "a3e4f5c6-1234-5678-90ab-cdef12345678"
     },
     "mac": {
       "target": [

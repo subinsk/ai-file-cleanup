@@ -4,11 +4,43 @@ Welcome to the AI File Cleanup documentation! This guide will help you set up an
 
 ## Quick Navigation
 
-1. [Prerequisites](./01-prerequisites.md) - Required software and tools
-2. [Installation](./02-installation.md) - Installing dependencies
-3. [Environment Setup](./03-environment-setup.md) - Configuring environment variables
-4. [Database Setup](./04-database-setup.md) - Setting up PostgreSQL with Docker
-5. [Running Project](./05-running-project.md) - Starting all services
+### Getting Started
+
+1. [Architecture](./00-architecture.md) - System architecture and design
+2. [Prerequisites](./01-prerequisites.md) - Required software and tools
+3. [Installation](./02-installation.md) - Installing dependencies
+4. [Environment Setup](./03-environment-setup.md) - Configuring environment variables
+5. [Database Setup](./04-database-setup.md) - Setting up PostgreSQL with Docker
+6. [Running Project](./05-running-project.md) - Starting all services
+
+### Deployment & Operations
+
+7. [Deployment](./06-deployment.md) - Production deployment guide
+8. [Deployment Instructions](./16-deployment-instructions.md) - Detailed deployment steps
+9. [Deployment Runbook](./17-deployment-runbook.md) - Operational runbook
+
+### Development Guides
+
+10. [API Documentation](./07-api-documentation.md) - API reference and endpoints
+11. [Developer Setup](./09-developer-setup.md) - Developer onboarding guide
+12. [Desktop Build](./19-desktop-build.md) - Building desktop application
+13. [Windows Installer](./14-windows-installer.md) - Creating Windows installer
+
+### Testing & Quality
+
+14. [Testing](./11-testing.md) - E2E testing guide
+15. [Cross-Platform Testing](./12-cross-platform-testing.md) - Cross-platform testing guide
+
+### Operations & Monitoring
+
+16. [Logging](./15-logging.md) - Logging system documentation
+17. [Quick Start Logging](./18-quick-start-logging.md) - Quick logging setup
+18. [CI/CD](./13-cicd.md) - CI/CD pipeline configuration
+
+### User Documentation
+
+19. [User Guide](./08-user-guide.md) - End-user instructions
+20. [Security](./10-security.md) - Security guidelines and best practices
 
 ## Quick Start
 

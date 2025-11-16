@@ -2,6 +2,7 @@
   "name": "ai-file-cleanup",
   "version": "1.0.0",
   "private": true,
+  "author": "AI File Cleanup Team",
   "description": "AI-powered file deduplication system with web and desktop apps",
   "scripts": {
     "dev": "turbo run dev --parallel",
@@ -41,7 +42,8 @@
     "package:desktop": "pnpm --filter=@ai-cleanup/desktop package",
     "package:desktop:win": "pnpm --filter=@ai-cleanup/desktop package:win",
     "package:desktop:mac": "pnpm --filter=@ai-cleanup/desktop package:mac",
-    "package:desktop:linux": "pnpm --filter=@ai-cleanup/desktop package:linux"
+    "package:desktop:linux": "pnpm --filter=@ai-cleanup/desktop package:linux",
+    "deploy:installers": "powershell -ExecutionPolicy Bypass -File copy-installers-to-web.ps1"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

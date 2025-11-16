@@ -220,8 +220,33 @@ ipcMain.handle('auth:login', async (_, email: string, password: string) => {
     });
 
     if (!response.ok) {
-      const data = await response.json();
-      return { success: false, message: data.detail || 'Login failed' };
+      let errorMessage = 'Login failed';
+
+      try {
+        const data = await response.json();
+
+        // Handle different error formats
+        if (data.detail) {
+          // FastAPI HTTPException format
+          if (typeof data.detail === 'string') {
+            errorMessage = data.detail;
+          } else if (Array.isArray(data.detail)) {
+            // Pydantic validation errors (422)
+            errorMessage = data.detail.map((err: any) => err.msg).join(', ');
+          }
+        } else if (data.message) {
+          errorMessage = data.message;
+        }
+      } catch (e) {
+        // Failed to parse JSON, use status-based message
+        if (response.status === 401) {
+          errorMessage = 'Invalid email or password';
+        } else if (response.status >= 500) {
+          errorMessage = 'Server error. Please try again later.';
+        }
+      }
+
+      return { success: false, message: errorMessage };
     }
 
     const data = await response.json();
@@ -232,7 +257,10 @@ ipcMain.handle('auth:login', async (_, email: string, password: string) => {
     };
   } catch (error) {
     console.error('Error logging in:', error);
-    return { success: false, message: 'Network error. Please try again.' };
+    return {
+      success: false,
+      message: 'Network error. Please check your connection and try again.',
+    };
   }
 });
 
@@ -249,8 +277,39 @@ ipcMain.handle('auth:signup', async (_, name: string, email: string, password: s
     });
 
     if (!response.ok) {
-      const data = await response.json();
-      return { success: false, message: data.detail || 'Registration failed' };
+      let errorMessage = 'Registration failed';
+
+      try {
+        const data = await response.json();
+
+        // Handle different error formats
+        if (data.detail) {
+          // FastAPI HTTPException format
+          if (typeof data.detail === 'string') {
+            errorMessage = data.detail;
+          } else if (Array.isArray(data.detail)) {
+            // Pydantic validation errors (422)
+            const errors = data.detail.map((err: any) => {
+              const field = err.loc ? err.loc[err.loc.length - 1] : 'field';
+              return `${field}: ${err.msg}`;
+            });
+            errorMessage = errors.join('; ');
+          }
+        } else if (data.message) {
+          errorMessage = data.message;
+        }
+      } catch (e) {
+        // Failed to parse JSON, use status-based message
+        if (response.status === 400) {
+          errorMessage = 'Email already registered';
+        } else if (response.status === 422) {
+          errorMessage = 'Please check your input and try again';
+        } else if (response.status >= 500) {
+          errorMessage = 'Server error. Please try again later.';
+        }
+      }
+
+      return { success: false, message: errorMessage };
     }
 
     // Auto login after registration
@@ -263,7 +322,10 @@ ipcMain.handle('auth:signup', async (_, name: string, email: string, password: s
     });
 
     if (!loginResponse.ok) {
-      return { success: false, message: 'Account created but login failed. Please log in.' };
+      return {
+        success: false,
+        message: 'Account created but auto-login failed. Please log in manually.',
+      };
     }
 
     const loginData = await loginResponse.json();
@@ -274,7 +336,10 @@ ipcMain.handle('auth:signup', async (_, name: string, email: string, password: s
     };
   } catch (error) {
     console.error('Error signing up:', error);
-    return { success: false, message: 'Network error. Please try again.' };
+    return {
+      success: false,
+      message: 'Network error. Please check your connection and try again.',
+    };
   }
 });
 

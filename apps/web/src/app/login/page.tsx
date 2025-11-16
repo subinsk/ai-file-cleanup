@@ -35,7 +35,33 @@ export default function LoginPage() {
       });
 
       if (!apiResponse.ok) {
-        setError('Invalid email or password');
+        let errorMessage = 'Login failed';
+
+        try {
+          const data = await apiResponse.json();
+
+          // Handle different error formats
+          if (data.detail) {
+            // FastAPI HTTPException format
+            if (typeof data.detail === 'string') {
+              errorMessage = data.detail;
+            } else if (Array.isArray(data.detail)) {
+              // Pydantic validation errors (422)
+              errorMessage = data.detail.map((err: any) => err.msg).join(', ');
+            }
+          } else if (data.message) {
+            errorMessage = data.message;
+          }
+        } catch (e) {
+          // Failed to parse JSON, use status-based message
+          if (apiResponse.status === 401) {
+            errorMessage = 'Invalid email or password';
+          } else if (apiResponse.status >= 500) {
+            errorMessage = 'Server error. Please try again later.';
+          }
+        }
+
+        setError(errorMessage);
         setLoading(false);
         return;
       }
@@ -61,7 +87,8 @@ export default function LoginPage() {
         router.refresh();
       }
     } catch (err) {
-      setError('An error occurred. Please try again.');
+      setError('Network error. Please check your connection and try again.');
+      console.error('Login error:', err);
     } finally {
       setLoading(false);
     }

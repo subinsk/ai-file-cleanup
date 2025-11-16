@@ -1,0 +1,46 @@
+Team Meeting Notes
+January 15, 2025
+
+ATTENDEES:
+John Smith - Project Manager
+Sarah Johnson - Lead Developer  
+Mike Chen - UX Designer
+Emily Brown - QA Engineer
+
+AGENDA:
+1. Sprint review
+2. Current blockers  
+3. Upcoming features
+4. Bug priorities
+
+SPRINT REVIEW:
+Completed 18 out of 20 story points
+Two items moved to next sprint
+Overall progress is on track
+
+CURRENT BLOCKERS:
+Database migration issue (in progress)
+Third-party API integration delayed
+Need approval for cloud resources
+
+UPCOMING FEATURES:
+User dashboard redesign
+Advanced search functionality
+Export to PDF feature
+Mobile app improvements
+
+BUG PRIORITIES:
+1. Login timeout issue (HIGH)
+2. Image upload failure (MEDIUM)
+3. Report generation slow (MEDIUM)
+4. UI alignment on mobile (LOW)
+
+ACTION ITEMS:
+John: Follow up on cloud resource approval
+Sarah: Fix database migration by EOD
+Mike: Complete dashboard mockups
+Emily: Test new search feature
+
+NEXT MEETING:
+January 22, 2025 at 2:00 PM
+

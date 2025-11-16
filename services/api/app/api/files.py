@@ -49,6 +49,45 @@ async def upload_and_process_files(
     PDF text extraction, image normalization, and other processing.
     """
     try:
+        # Import security utilities
+        from app.utils.file_security import (
+            sanitize_filename, validate_file_extension,
+            validate_mime_type, check_file_size
+        )
+        
+        # Validate file count
+        if len(files) > 100:
+            raise HTTPException(
+                status_code=400,
+                detail="Too many files. Maximum 100 files allowed per upload."
+            )
+        
+        # Check user quota
+        from app.services.quota_manager import quota_manager
+        
+        # Check upload count quota
+        if not await quota_manager.check_user_upload_count(user.id):
+            raise HTTPException(
+                status_code=429,
+                detail="Upload limit reached. Please delete old uploads to free up space."
+            )
+        
+        # Calculate total size for quota check
+        total_size = 0
+        for file in files:
+            # Read file to get size (we'll need to re-read later, but this is necessary)
+            content = await file.read()
+            total_size += len(content)
+            # Reset file pointer
+            await file.seek(0)
+        
+        # Check storage quota
+        if not await quota_manager.check_user_storage_quota(user.id, total_size):
+            raise HTTPException(
+                status_code=429,
+                detail="Storage quota exceeded. Please delete old files to free up space."
+            )
+        
         results = []
         successful_count = 0
         failed_count = 0
@@ -57,14 +96,59 @@ async def upload_and_process_files(
         
         for i, file in enumerate(files):
             try:
+                # Sanitize filename
+                original_filename = file.filename or f"file_{i}"
+                safe_filename = sanitize_filename(original_filename)
+                
+                # Validate file extension
+                if not validate_file_extension(safe_filename):
+                    logger.warning(f"Invalid file extension: {safe_filename}")
+                    failed_count += 1
+                    results.append(FileProcessingResult(
+                        success=False,
+                        file_id=f"file_{i}",
+                        filename=safe_filename,
+                        mime_type=file.content_type or "application/octet-stream",
+                        file_hash="",
+                        file_type="error",
+                        error="File type not allowed. Supported: images, PDF, text files."
+                    ))
+                    continue
+                
                 # Read file data
                 file_data = await file.read()
+                
+                # Check file size
+                if not check_file_size(file_data, max_size_mb=50):
+                    logger.warning(f"File too large: {safe_filename}")
+                    failed_count += 1
+                    results.append(FileProcessingResult(
+                        success=False,
+                        file_id=f"file_{i}",
+                        filename=safe_filename,
+                        mime_type=file.content_type or "application/octet-stream",
+                        file_hash="",
+                        file_type="error",
+                        error="File too large. Maximum size: 50MB"
+                    ))
+                    continue
+                
+                # Validate MIME type matches content
+                declared_mime = file.content_type or "application/octet-stream"
+                is_valid_mime, actual_mime = validate_mime_type(file_data, declared_mime)
+                
+                if not is_valid_mime:
+                    logger.warning(f"MIME type mismatch for {safe_filename}: declared={declared_mime}, actual={actual_mime}")
+                    # Use actual MIME type for processing
+                    mime_type_to_use = actual_mime
+                else:
+                    mime_type_to_use = declared_mime
                 
                 # Process file based on type
                 result = await file_processor.process_file(
                     file_data=file_data,
-                    filename=file.filename or f"file_{i}",
-                    mime_type=file.content_type or "application/octet-stream"
+                    filename=safe_filename,
+                    mime_type=mime_type_to_use
                 )
                 
                 # Convert to response format

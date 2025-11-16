@@ -1,0 +1,20 @@
+AI File Cleanup - Project Documentation
+
+This document contains important information about the AI File Cleanup project.
+It demonstrates the system's ability to detect exact duplicate files using SHA-256 hashing.
+
+The system can identify files that are byte-for-byte identical, regardless of their names or locations.
+This is particularly useful for finding backup copies and accidentally duplicated files.
+
+Features:
+- Fast hash-based matching
+- 100% accuracy for exact duplicates
+- No false positives
+- Efficient storage savings
+
+Use cases:
+- Finding backup copies
+- Identifying accidentally copied files
+- Cleaning up downloads folders
+- Managing large file collections
+

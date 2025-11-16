@@ -1,7 +1,7 @@
 """Authentication endpoints"""
 import logging
 from fastapi import APIRouter, HTTPException, Response, Cookie
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, validator
 from typing import Optional
 
 from app.core.database import get_db
@@ -17,6 +17,30 @@ class RegisterRequest(BaseModel):
     email: EmailStr
     password: str
     name: Optional[str] = None
+    
+    @validator('password')
+    def validate_password(cls, v):
+        """Validate password strength"""
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters long')
+        if not any(c.isupper() for c in v):
+            raise ValueError('Password must contain at least one uppercase letter')
+        if not any(c.islower() for c in v):
+            raise ValueError('Password must contain at least one lowercase letter')
+        if not any(c.isdigit() for c in v):
+            raise ValueError('Password must contain at least one digit')
+        return v
+    
+    @validator('name')
+    def validate_name(cls, v):
+        """Sanitize name input"""
+        if v:
+            # Remove potential XSS characters
+            import re
+            v = re.sub(r'[<>\"\'&]', '', v)
+            if len(v) > 100:
+                raise ValueError('Name must be less than 100 characters')
+        return v
 
 
 class LoginRequest(BaseModel):
@@ -92,12 +116,13 @@ async def login(request: LoginRequest, response: Response):
         
         # Set httpOnly cookie
         from app.core.config import settings
+        is_production = settings.NODE_ENV == "production"
         response.set_cookie(
             key="access_token",
             value=access_token,
-            httponly=False,  # Allow JS access for SPA
-            secure=False,  # Set to False for local development (True in production)
-            samesite="lax",
+            httponly=True,  # Prevent XSS attacks
+            secure=is_production,  # HTTPS only in production
+            samesite="strict" if is_production else "lax",  # Strict in production
             max_age=60 * 60 * 24 * 7,  # 7 days
             path="/",  # Ensure cookie is sent for all paths
         )

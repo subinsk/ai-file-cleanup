@@ -1,0 +1,10 @@
+id,name,value,category,timestamp
+1,ItemA,100.50,Electronics,2025-01-01
+2,ItemB,250.00,Furniture,2025-01-02
+3,ItemC,75.25,Electronics,2025-01-03
+4,ItemD,180.00,Appliances,2025-01-04
+5,ItemE,95.75,Electronics,2025-01-05
+6,ItemF,320.00,Furniture,2025-01-06
+7,ItemG,45.50,Electronics,2025-01-07
+8,ItemH,210.00,Appliances,2025-01-08
+

@@ -10,40 +10,60 @@ AI File Cleanup is a **monorepo-based web application** that uses AI to detect a
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                         User Browser                             │
-│                    (http://localhost:3000)                       │
-└────────────────────────────┬────────────────────────────────────┘
-                             │
-                             │ HTTPS/HTTP
-                             ▼
+│                         User Clients                             │
+│  ┌───────────────────┐          ┌───────────────────┐          │
+│  │   Web Browser     │          │  Desktop App      │          │
+│  │ (localhost:3000)  │          │   (Electron)      │          │
+│  └────────┬──────────┘          └────────┬──────────┘          │
+└───────────┼─────────────────────────────┼────────────────────────┘
+            │                             │
+            │ HTTPS/HTTP                  │ HTTPS/HTTP
+            │ JWT Auth                    │ License Key + JWT
+            ▼                             ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                      Next.js Web App                             │
 │                    (Frontend + SSR)                              │
 │  - React 18 + TypeScript                                        │
 │  - NextAuth.js (Authentication)                                 │
 │  - Tailwind CSS + shadcn/ui                                     │
+│  - Zustand (State Management)                                   │
 └────────────────────────────┬────────────────────────────────────┘
                              │
                              │ REST API
+                             │ Rate Limited (100 req/min)
                              ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                      Python API Service                          │
 │                    (http://localhost:3001)                       │
-│  - FastAPI Framework                                            │
-│  - JWT Authentication                                           │
-│  - Business Logic                                               │
-│  - File Management                                              │
+│  ┌───────────────────────────────────────────────────────────┐ │
+│  │ Security Layer                                            │ │
+│  │ - JWT Verification                                        │ │
+│  │ - Input Validation & Sanitization                        │ │
+│  │ - Rate Limiting (3-tier)                                 │ │
+│  │ - CORS Protection                                        │ │
+│  │ - File Upload Security (MIME validation)                │ │
+│  └───────────────────────────────────────────────────────────┘ │
+│  ┌───────────────────────────────────────────────────────────┐ │
+│  │ Business Logic                                           │ │
+│  │ - Authentication (JWT + bcrypt)                         │ │
+│  │ - File Processing Pipeline                              │ │
+│  │ - Duplicate Detection                                   │ │
+│  │ - User Quota Management                                 │ │
+│  │ - License Key Validation                                │ │
+│  └───────────────────────────────────────────────────────────┘ │
 └─────────────────┬───────────────────┬───────────────────────────┘
                   │                   │
-                  │ REST API          │ Prisma ORM
+                  │ REST API          │ Prisma ORM (SQL Protection)
                   ▼                   ▼
 ┌────────────────────────┐  ┌────────────────────────────────────┐
-│   ML Service           │  │   PostgreSQL + pgvector            │
-│ (localhost:3002)       │  │   (localhost:5433)                 │
-│ - PyTorch              │  │ - User Data                        │
+│   ML Service           │  │   PostgreSQL 15 + pgvector         │
+│ (localhost:3002)       │  │   (localhost:5432)                 │
+│ - PyTorch              │  │ - User Data & Auth                 │
 │ - Transformers         │  │ - License Keys                     │
 │ - DistilBERT (Text)    │  │ - File Metadata                    │
-│ - CLIP (Images)        │  │ - Vector Embeddings                │
+│ - CLIP (Images)        │  │ - Upload Sessions                  │
+│ - Embedding Cache      │  │ - Vector Embeddings (pgvector)     │
+│ - Batch Processing     │  │ - Dedupe Groups                    │
 └────────────────────────┘  └────────────────────────────────────┘
 ```
 
@@ -96,19 +116,37 @@ AI File Cleanup is a **monorepo-based web application** that uses AI to detect a
 ```
 ai-file-cleanup/
 ├── apps/
-│   └── web/                    # Next.js web application
-│       ├── src/
-│       │   ├── app/            # Next.js App Router pages
-│       │   ├── components/     # React components
-│       │   ├── lib/            # Utilities & clients
-│       │   └── middleware.ts   # Route protection
+│   ├── web/                    # Next.js web application
+│   │   ├── src/
+│   │   │   ├── app/            # Next.js App Router pages
+│   │   │   ├── components/     # React components
+│   │   │   ├── lib/            # Utilities & clients
+│   │   │   └── middleware.ts   # Route protection
+│   │   ├── vercel.json         # Vercel deployment config
+│   │   └── package.json
+│   │
+│   └── desktop/                # Electron desktop application
+│       ├── electron/           # Electron main process
+│       │   ├── main.ts         # Main process logic
+│       │   └── preload.ts      # Preload script
+│       ├── src/                # React renderer
+│       │   ├── pages/          # Application pages
+│       │   └── lib/            # Desktop utilities
 │       └── package.json
 │
 ├── packages/
 │   ├── db/                     # Database package
 │   │   ├── prisma/
-│   │   │   └── schema.prisma   # Database schema
+│   │   │   ├── schema.prisma   # Database schema
+│   │   │   └── migrations/     # Database migrations
 │   │   └── package.json
+│   │
+│   ├── core/                   # Core deduplication logic
+│   │   └── src/
+│   │       ├── dedupe/         # Duplicate detection
+│   │       ├── hash/           # Hashing utilities
+│   │       ├── preprocessing/  # File preprocessing
+│   │       └── similarity/     # Similarity algorithms
 │   │
 │   ├── docs/                   # Documentation
 │   │   ├── 00-architecture.md
@@ -116,28 +154,51 @@ ai-file-cleanup/
 │   │   ├── 02-installation.md
 │   │   ├── 03-environment-setup.md
 │   │   ├── 04-database-setup.md
-│   │   └── 05-running-project.md
+│   │   ├── 05-running-project.md
+│   │   └── 06-deployment.md
 │   │
 │   ├── types/                  # Shared TypeScript types
 │   │   └── src/
 │   │
 │   └── ui/                     # Shared UI components
 │       └── src/
+│           └── components/     # Reusable components
 │
 ├── services/
 │   ├── api/                    # Python FastAPI service
 │   │   ├── app/
 │   │   │   ├── api/            # API routes
-│   │   │   │   ├── auth.py
-│   │   │   │   ├── license.py
-│   │   │   │   └── dedupe.py
+│   │   │   │   ├── auth.py     # Authentication
+│   │   │   │   ├── license.py  # License management
+│   │   │   │   ├── dedupe.py   # Deduplication
+│   │   │   │   ├── files.py    # File operations
+│   │   │   │   ├── quota.py    # User quotas
+│   │   │   │   ├── desktop.py  # Desktop endpoints
+│   │   │   │   └── health.py   # Health checks
+│   │   │   │
 │   │   │   ├── core/           # Core utilities
-│   │   │   │   ├── config.py
-│   │   │   │   ├── security.py
-│   │   │   │   └── database.py
+│   │   │   │   ├── config.py   # Configuration
+│   │   │   │   ├── security.py # JWT & passwords
+│   │   │   │   └── database.py # Database client
+│   │   │   │
 │   │   │   ├── middleware/     # Middleware
+│   │   │   │   ├── auth.py     # Auth middleware
+│   │   │   │   ├── rate_limit.py # Rate limiting
+│   │   │   │   └── validation.py # Input validation
+│   │   │   │
+│   │   │   ├── services/       # Business logic
+│   │   │   │   ├── file_processor.py # File processing
+│   │   │   │   ├── quota_manager.py  # Quota tracking
+│   │   │   │   ├── ml_client.py      # ML service client
+│   │   │   │   └── embedding_cache.py # Embedding cache
+│   │   │   │
+│   │   │   ├── utils/          # Utilities
+│   │   │   │   └── file_security.py # Security utils
+│   │   │   │
 │   │   │   └── main.py         # FastAPI app
+│   │   │
 │   │   ├── requirements.txt
+│   │   ├── render.yaml         # Render deployment config
 │   │   └── run.py
 │   │
 │   └── ml-service/             # Python ML service
@@ -147,11 +208,29 @@ ai-file-cleanup/
 │       │   ├── services/       # Embedding generation
 │       │   └── main.py
 │       ├── requirements.txt
+│       ├── render.yaml         # Render deployment config
 │       └── run.py
+│
+├── demo_dataset/               # Demo files for testing
+│   ├── scenario_1_exact_duplicates/
+│   ├── scenario_2_similar_images/
+│   ├── scenario_3_text_similarity/
+│   ├── scenario_4_pdf_comparison/
+│   ├── scenario_5_mixed_types/
+│   └── edge_cases/
 │
 ├── docker-compose.yml          # PostgreSQL with pgvector
 ├── turbo.json                  # TurboRepo config
 ├── pnpm-workspace.yaml         # pnpm workspaces
+│
+├── API_DOCUMENTATION.md        # Complete API reference
+├── DEVELOPER_SETUP_GUIDE.md    # Setup instructions
+├── USER_GUIDE.md               # User documentation
+├── DEPLOYMENT_RUNBOOK.md       # Deployment procedures
+├── SECURITY_REVIEW.md          # Security audit
+├── BUG_SWEEP_REPORT.md         # Quality assurance
+├── PROFESSOR_PRESENTATION.md   # Demo script
+│
 └── package.json                # Root package.json
 ```
 
@@ -229,23 +308,63 @@ User requests license
 
 1. **Session Management:**
    - NextAuth.js manages frontend sessions
-   - JWT tokens stored in httpOnly cookies
+   - JWT tokens stored in httpOnly cookies (XSS protection)
+   - Secure flag enabled in production (HTTPS only)
+   - SameSite=strict in production (CSRF protection)
    - 7-day token expiration
 
 2. **Password Security:**
    - bcrypt hashing with salt rounds
-   - Minimum password length enforcement
+   - Password requirements:
+     - Minimum 8 characters
+     - At least one uppercase letter
+     - At least one lowercase letter
+     - At least one digit
    - No password storage in plain text
+   - No password exposure in logs
 
 3. **API Security:**
    - JWT verification on protected routes
-   - CORS configuration for trusted origins
-   - Request rate limiting (production)
+   - CORS configuration for trusted origins only
+   - Rate limiting (3-tier):
+     - General API: 100 requests per 60 seconds
+     - Authentication: 10 attempts per 5 minutes
+     - File Upload: 20 uploads per 5 minutes
+   - Request size validation (100MB max)
+   - IP and user-based rate tracking
 
-4. **Database Security:**
-   - Parameterized queries (via Prisma)
+4. **Input Validation:**
+   - Multi-layer validation pipeline:
+     - File extension whitelist (.jpg, .png, .pdf, .txt, .csv)
+     - MIME type validation against file content
+     - Filename sanitization (path traversal prevention)
+     - File size limits (50MB per file, 500MB total)
+     - XSS prevention (HTML tag removal)
+     - SQL injection pattern blocking
+   - python-magic for MIME detection
+   - Comprehensive error handling
+
+5. **Database Security:**
+   - Parameterized queries (via Prisma ORM)
    - No raw SQL injection points
-   - User data isolation
+   - User data isolation by userId
+   - Connection pooling with limits
+   - Encrypted connections in production
+
+6. **File Upload Security:**
+   - File count limits (100 files max)
+   - Per-file size validation (50MB)
+   - Total upload size validation (500MB)
+   - MIME type verification
+   - Path traversal prevention
+   - Safe filename generation
+   - Temporary file cleanup
+
+7. **User Quotas:**
+   - Storage quota: 1GB per user
+   - Upload count limit: 50 per user
+   - Real-time quota enforcement
+   - Quota endpoint for monitoring
 
 ### Network Security
 
@@ -383,27 +502,78 @@ Local Machine
 - **Database:** Query performance monitoring
 - **Infrastructure:** Health checks, uptime monitoring
 
+## Current Status (January 2025)
+
+### ✅ Implemented Features
+
+1. **Desktop Application** ✅
+   - Electron-based cross-platform app (Windows, macOS, Linux)
+   - Local directory scanning
+   - License key activation and validation
+   - Native file operations (move to trash)
+   - Offline processing capabilities
+
+2. **Security Hardening** ✅
+   - Multi-layer input validation
+   - Rate limiting (3-tier)
+   - MIME type validation
+   - Path traversal prevention
+   - SQL injection protection
+   - XSS prevention
+   - Authentication security improvements
+
+3. **User Quotas** ✅
+   - Storage limits (1GB per user)
+   - Upload count limits (50 per user)
+   - Real-time quota tracking
+   - Quota API endpoint
+
+4. **Comprehensive Documentation** ✅
+   - API Documentation (30+ pages)
+   - Developer Setup Guide (25+ pages)
+   - User Guide (20+ pages)
+   - Deployment Runbook (20+ pages)
+   - Security Review (15+ pages)
+   - Bug Sweep Report (10+ pages)
+
+5. **Production Ready** ✅
+   - Vercel deployment configuration
+   - Render deployment configuration
+   - Health check endpoints
+   - Error handling and logging
+   - Rollback procedures documented
+
 ## Future Enhancements
 
-1. **Desktop Application**
-   - Electron-based cross-platform app
-   - Local file scanning
-   - License key activation
+1. **Testing & Quality**
+   - E2E testing framework (Playwright/Cypress)
+   - Integration test suite
+   - Cross-platform testing automation
+   - Load testing and performance benchmarks
 
 2. **Real-time Processing**
-   - WebSocket connections
-   - Live progress updates
-   - Background job queue
+   - WebSocket connections for live updates
+   - Background job queue (Celery/BullMQ)
+   - Progress tracking for long operations
 
 3. **Advanced ML**
-   - Fine-tuned models for better accuracy
-   - Support for more file types
-   - Custom similarity thresholds
+   - Fine-tuned models for specific file types
+   - Video duplicate detection
+   - Audio file similarity
+   - Custom similarity threshold configuration
 
-4. **Collaboration**
+4. **Collaboration Features**
    - Team workspaces
    - Shared file collections
    - Role-based access control
+   - Activity logs and audit trails
+
+5. **Enterprise Features**
+   - Redis-based rate limiting (distributed)
+   - Token revocation mechanism
+   - Advanced analytics dashboard
+   - GDPR compliance tools (data export/deletion)
+   - SSO integration (OAuth, SAML)
 
 ---
 

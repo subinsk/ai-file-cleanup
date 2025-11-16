@@ -35,17 +35,43 @@ export default function DownloadPage() {
               Windows 10 or later (64-bit)
             </p>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 text-center">
-              Version 1.0.0 • 150 MB
+              Version 1.0.0
             </p>
-            <button className="w-full px-8 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-colors font-medium shadow-md hover:shadow-lg text-lg">
-              Download for Windows
-            </button>
-            <a
-              href="#"
-              className="block text-center mt-3 text-sm text-blue-600 dark:text-blue-400 hover:underline"
-            >
-              Alternative downloads (.zip, .msi)
-            </a>
+            <div className="flex gap-3 mb-4">
+              <a
+                href="/api/download/AI-File-Cleanup-1.0.0.exe"
+                className="flex-1 px-6 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-colors font-medium shadow-md hover:shadow-lg text-center"
+              >
+                <div className="text-sm opacity-90 mb-1">NSIS Installer</div>
+                <div className="font-semibold">.exe • 80 MB</div>
+              </a>
+              <a
+                href="/api/download/AI-File-Cleanup-1.0.0.msi"
+                className="flex-1 px-6 py-4 bg-green-600 text-white rounded-lg hover:bg-green-700 active:bg-green-800 transition-colors font-medium shadow-md hover:shadow-lg text-center"
+              >
+                <div className="text-sm opacity-90 mb-1">MSI Installer</div>
+                <div className="font-semibold">.msi • 90 MB</div>
+              </a>
+            </div>
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-gray-600 dark:text-gray-400 text-center font-medium">
+                Alternative Downloads:
+              </p>
+              <div className="flex gap-3 justify-center flex-wrap">
+                <a
+                  href="/api/download/AI-File-Cleanup-1.0.0-Portable.exe"
+                  className="text-sm px-4 py-2 border border-blue-600 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                >
+                  Portable (.exe)
+                </a>
+                <a
+                  href="/api/download/AI-File-Cleanup-1.0.0-win.zip"
+                  className="text-sm px-4 py-2 border border-blue-600 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                >
+                  ZIP Archive
+                </a>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -175,17 +201,47 @@ export default function DownloadPage() {
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-bold mb-6 dark:text-white">Installation Instructions</h2>
 
-          <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-6">
+          <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-6 mb-6">
             <h3 className="font-semibold mb-3 flex items-center gap-2 dark:text-white">
               <Monitor className="w-5 h-5 text-blue-600" />
               Windows Installation
             </h3>
             <ol className="list-decimal list-inside space-y-2 text-gray-600 dark:text-gray-300 ml-2">
-              <li>Download the .exe installer from above</li>
+              <li>Download either the .exe (NSIS) or .msi installer from above</li>
               <li>Double-click the downloaded file</li>
               <li>Follow the installation wizard steps</li>
               <li>Launch the app and enter your license key to activate</li>
             </ol>
+          </div>
+
+          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-6 border border-blue-200 dark:border-blue-800">
+            <h3 className="font-semibold mb-3 text-blue-900 dark:text-blue-300">
+              Which installer should I choose?
+            </h3>
+            <div className="space-y-3 text-sm text-gray-700 dark:text-gray-300">
+              <div>
+                <strong className="text-blue-900 dark:text-blue-300">NSIS Installer (.exe):</strong>{' '}
+                Popular installer with customizable installation wizard. Smaller file size (80 MB),
+                supports custom install locations, and creates Start Menu shortcuts. Good for most
+                users who want flexibility.
+              </div>
+              <div>
+                <strong className="text-blue-900 dark:text-blue-300">MSI Installer (.msi):</strong>{' '}
+                Windows standard installer format (90 MB). Better integration with Windows Installer
+                service, supports Group Policy deployment, and preferred in enterprise environments.
+                Recommended for IT administrators.
+              </div>
+              <div>
+                <strong className="text-blue-900 dark:text-blue-300">Portable (.exe):</strong> No
+                installation required. Run directly from any location. Great for USB drives or
+                testing.
+              </div>
+              <div>
+                <strong className="text-blue-900 dark:text-blue-300">ZIP Archive:</strong> Contains
+                the complete portable version with all dependencies. Extract and run from any
+                location.
+              </div>
+            </div>
           </div>
         </div>
 

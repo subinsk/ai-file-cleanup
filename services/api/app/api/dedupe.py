@@ -204,16 +204,31 @@ async def _process_real_file(file_data: Dict[str, Any], index: int) -> Dict[str,
         file_content = file_data.get('content', b'')
         
         if not file_content:
-            # Use the actual file path provided by the user
+            # Use the actual file path provided by the user (with security validation)
             logger.info(f"Processing file: {filename}, path: {file_path}")
-            if file_path and os.path.exists(file_path):
-                try:
-                    with open(file_path, 'rb') as f:
-                        file_content = f.read()
-                    logger.info(f"Successfully read file from user path: {file_path} ({len(file_content)} bytes)")
-                except Exception as e:
-                    logger.error(f"Failed to read file from user path {file_path}: {e}")
-                    raise FileNotFoundError(f"Failed to read file from path {file_path}: {e}")
+            if file_path:
+                # Validate file path for security
+                from app.utils.file_security import validate_file_path, sanitize_filename
+                
+                # Sanitize the filename
+                filename = sanitize_filename(filename)
+                
+                # Validate the file path (prevents path traversal)
+                if not validate_file_path(file_path):
+                    logger.error(f"Invalid or unsafe file path: {file_path}")
+                    raise ValueError(f"Invalid or unsafe file path")
+                
+                if os.path.exists(file_path):
+                    try:
+                        with open(file_path, 'rb') as f:
+                            file_content = f.read()
+                        logger.info(f"Successfully read file from user path: {file_path} ({len(file_content)} bytes)")
+                    except Exception as e:
+                        logger.error(f"Failed to read file from user path {file_path}: {e}")
+                        raise FileNotFoundError(f"Failed to read file from path {file_path}: {e}")
+                else:
+                    logger.error(f"File does not exist: {file_path}")
+                    raise FileNotFoundError(f"File not found: {file_path}")
             else:
                 # Fallback to test_files directory for testing
                 test_file_path = f"test_files/{filename}"

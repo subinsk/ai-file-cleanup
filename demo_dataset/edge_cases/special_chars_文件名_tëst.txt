@@ -1,0 +1,7 @@
+This file has special characters in its name including:
+- Unicode characters: 文件名
+- Accented characters: tëst
+- Emoji would go here if supported
+
+The system should handle these gracefully and sanitize the filename for safe processing.
+
