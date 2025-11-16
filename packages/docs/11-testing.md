@@ -86,9 +86,17 @@ pnpm exec playwright test --project=webkit
 
 | File                  | Purpose                     | Tests    |
 | --------------------- | --------------------------- | -------- |
-| `auth.spec.ts`        | Authentication flows        | 10 tests |
-| `file-upload.spec.ts` | File upload & deduplication | 10 tests |
-| `quota.spec.ts`       | User quota management       | 5 tests  |
+| `auth.spec.ts`        | Authentication flows        | 11 tests |
+| `file-upload.spec.ts` | File upload & deduplication | 12 tests |
+| `quota.spec.ts`       | User quota management       | 6 tests  |
+
+### Helper Files
+
+| File                      | Purpose                              |
+| ------------------------- | ------------------------------------ |
+| `helpers/selectors.ts`    | Centralized test ID constants        |
+| `helpers/auth.helpers.ts` | Reusable authentication functions    |
+| `helpers/file.helpers.ts` | File upload and processing utilities |
 
 ### Test Coverage
 
@@ -103,6 +111,8 @@ pnpm exec playwright test --project=webkit
 7. ✅ Validate password requirements
 8. ✅ Logout successfully
 9. ✅ Protect authenticated routes
+10. ✅ Display password toggle button
+11. ✅ Validate matching passwords on registration
 
 #### File Upload (file-upload.spec.ts)
 
@@ -112,9 +122,12 @@ pnpm exec playwright test --project=webkit
 4. ✅ Detect duplicate files
 5. ✅ Allow selecting files to keep
 6. ✅ Download cleaned files as ZIP
-7. ⏳ Validate file types (requires implementation)
-8. ⏳ Respect file size limits (requires large test file)
+7. ✅ Validate file types (UI guidance)
+8. ✅ Respect file size limits (UI validation)
 9. ✅ Show quota information
+10. ✅ Clear selected files
+11. ✅ Disable upload button when no files selected
+12. ✅ Enable upload button after file selection
 
 #### Quota Management (quota.spec.ts)
 
@@ -123,6 +136,83 @@ pnpm exec playwright test --project=webkit
 3. ✅ Show remaining quota
 4. ⏳ Warn when quota is low (requires setup)
 5. ⏳ Prevent upload when quota exceeded (requires setup)
+6. ✅ Display quota on upload page
+
+## Test Helpers
+
+### Authentication Helpers (`helpers/auth.helpers.ts`)
+
+Reusable functions for user authentication:
+
+```typescript
+import {
+  generateTestUser,
+  registerUser,
+  loginUser,
+  createAndLoginUser,
+} from './helpers/auth.helpers';
+
+// Generate unique test user
+const user = generateTestUser();
+
+// Register a user
+await registerUser(page, user);
+
+// Login with existing user
+await loginUser(page, { email: 'test@example.com', password: 'TestPassword123' });
+
+// Register and login in one step
+await createAndLoginUser(page);
+
+// Logout
+await logoutUser(page);
+
+// Assert errors
+await assertLoginError(page, /invalid.*credentials/i);
+await assertRegisterError(page, /password.*8 characters/i);
+```
+
+### File Upload Helpers (`helpers/file.helpers.ts`)
+
+Utilities for file upload testing:
+
+```typescript
+import { uploadFiles, uploadAndProcess, testFiles } from './helpers/file.helpers';
+
+// Navigate to upload page
+await goToUploadPage(page);
+
+// Upload files
+await uploadFiles(page, testFiles.documentOriginal);
+await uploadFiles(page, [testFiles.documentOriginal, testFiles.documentCopy]);
+
+// Upload and start processing
+await uploadAndProcess(page, testFiles.documentOriginal);
+
+// Wait for processing
+await waitForProcessingComplete(page);
+
+// Assert duplicates found
+await assertDuplicatesFound(page);
+
+// Download cleaned files
+const filename = await downloadCleanedFiles(page);
+```
+
+### Selector Constants (`helpers/selectors.ts`)
+
+Centralized test IDs for consistency:
+
+```typescript
+import { selectors, getSelector } from './helpers/selectors';
+
+// Use selector constants
+await page.getByTestId(selectors.login.form.email);
+await page.getByTestId(selectors.upload.submitButton);
+
+// Or use helper function
+await page.getByTestId(getSelector('login.form.email'));
+```
 
 ## Test Data
 
@@ -146,8 +236,8 @@ demo_dataset/
 Tests automatically generate unique test users using timestamps:
 
 ```typescript
-const timestamp = Date.now();
-const testEmail = `test${timestamp}@example.com`;
+const user = generateTestUser(); // Returns unique email and password
+// Example: { email: 'test1699999999999@example.com', password: 'TestPassword123', name: 'Test User' }
 ```
 
 This prevents conflicts between test runs.
@@ -161,45 +251,112 @@ Each test should be independent:
 - Create new user per test (or test suite)
 - Don't rely on data from other tests
 - Clean up after tests if needed
+- Use helper functions to reduce duplication
 
-### 2. Selectors
+### 2. Selectors - UPDATED ✨
 
-Use resilient selectors:
+Use stable and semantic selectors in priority order:
 
 ```typescript
-// ✅ Good - Role-based
-await page.getByRole('button', { name: /submit/i });
+// ✅ BEST - Test IDs (most stable)
+await page.getByTestId('login-form-email');
+await page.getByTestId('upload-submit-button');
 
-// ✅ Good - Label-based
+// ✅ Good - Role-based (accessible)
+await page.getByRole('button', { name: /submit/i });
+await page.getByRole('heading', { name: /sign in/i });
+
+// ✅ Good - Label-based (for form inputs)
 await page.getByLabel(/email/i);
 
-// ❌ Avoid - CSS selectors
+// ⚠️ Use with caution - Text content (can change)
+await page.getByText('Success');
+
+// ❌ Avoid - CSS selectors (brittle)
 await page.locator('.submit-button');
+await page.locator('input[type="email"]');
 ```
 
-### 3. Waiting
+**Test ID Naming Convention:**
+
+Format: `[page]-[component]-[element]`
+
+Examples:
+
+- `login-form-email`
+- `login-form-password`
+- `login-form-submit`
+- `register-form-name`
+- `upload-dropzone-input`
+- `upload-submit-button`
+
+**Centralized Selectors:**
+
+Use the centralized selector constants for consistency:
+
+```typescript
+import { selectors } from './helpers/selectors';
+
+await page.getByTestId(selectors.login.form.email);
+await page.getByTestId(selectors.upload.submitButton);
+```
+
+### 3. Helper Functions - NEW ✨
+
+Use reusable helper functions to reduce test duplication:
+
+```typescript
+import { createAndLoginUser, loginUser, logoutUser } from './helpers/auth.helpers';
+import { uploadFiles, uploadAndProcess } from './helpers/file.helpers';
+
+// Register and login in one step
+await createAndLoginUser(page);
+
+// Upload and process files
+await uploadAndProcess(page, testFiles.documentOriginal);
+```
+
+### 4. Waiting
 
 Use Playwright's auto-waiting:
 
 ```typescript
 // ✅ Good - Playwright waits automatically
 await expect(page.getByText('Success')).toBeVisible();
+await expect(page.getByTestId('upload-complete')).toBeVisible({ timeout: 30000 });
 
-// ❌ Avoid - Manual timeouts
+// ❌ Avoid - Manual timeouts (unless absolutely necessary)
 await page.waitForTimeout(5000);
 ```
 
-### 4. Assertions
+### 5. Assertions
 
 Use descriptive assertions:
 
 ```typescript
 // ✅ Good
 await expect(page).toHaveURL('/dashboard');
+await expect(page.getByTestId('login-form-error')).toBeVisible();
 await expect(page.getByText('Welcome')).toBeVisible();
 
 // ❌ Less descriptive
 expect(page.url()).toBe('http://localhost:3000/dashboard');
+```
+
+### 6. Accessibility
+
+Tests should verify accessibility:
+
+```typescript
+// Check for proper labels
+await expect(page.getByLabel('Email address')).toBeVisible();
+
+// Verify ARIA attributes
+await expect(button).toHaveAttribute('aria-label', 'Show password');
+
+// Test keyboard navigation
+await page.keyboard.press('Tab');
+await page.keyboard.press('Enter');
 ```
 
 ## CI/CD Integration
@@ -377,6 +534,102 @@ export default function () {
   sleep(1);
 }
 ```
+
+## Rate Limiting in Tests
+
+### Overview
+
+The application uses a configurable rate limiting system that adapts based on the environment and test requirements.
+
+### Rate Limit Profiles
+
+The API supports 4 rate limit profiles:
+
+| Profile           | Use Case               | Limits                 |
+| ----------------- | ---------------------- | ---------------------- |
+| `production`      | Production environment | 5-100 req/min (strict) |
+| `development`     | Local development      | 1000 req/min (relaxed) |
+| `test`            | Running E2E tests      | 1000 req/min (relaxed) |
+| `test_rate_limit` | Testing rate limiting  | 3-10 req/min (strict)  |
+
+### Configuration
+
+Set the `RATE_LIMIT_PROFILE` environment variable:
+
+```bash
+# In Playwright config (automatic for regular tests)
+RATE_LIMIT_PROFILE=test
+
+# For rate limit-specific tests
+RATE_LIMIT_PROFILE=test_rate_limit
+```
+
+### Header Override
+
+Tests can use the `X-Test-Rate-Limit` header for fine-grained control:
+
+```typescript
+// Enable strict rate limits for specific tests
+test.use({
+  extraHTTPHeaders: {
+    'X-Test-Rate-Limit': 'enabled',
+  },
+});
+
+// Disable rate limiting for specific tests
+test.use({
+  extraHTTPHeaders: {
+    'X-Test-Rate-Limit': 'disabled',
+  },
+});
+```
+
+### Rate Limit Tests
+
+Dedicated rate limit tests are in `rate-limit.spec.ts`:
+
+```typescript
+test.describe('Rate Limiting', () => {
+  test.use({
+    extraHTTPHeaders: {
+      'X-Test-Rate-Limit': 'enabled',
+    },
+  });
+
+  test('should rate limit login attempts', async ({ page }) => {
+    // Make rapid requests to trigger rate limit
+    for (let i = 0; i < 6; i++) {
+      await page.getByTestId('login-form-submit').click();
+    }
+
+    // Should see rate limit error
+    await expect(page.getByText(/rate limit/i)).toBeVisible();
+  });
+});
+```
+
+### Running Rate Limit Tests
+
+Rate limit tests run in a separate project:
+
+```bash
+# Run only rate limit tests
+pnpm exec playwright test --project=rate-limit-tests
+
+# Run all tests except rate limit tests
+pnpm exec playwright test --project=chromium --project=firefox
+
+# Run everything including rate limit tests
+pnpm exec playwright test
+```
+
+### Why This Approach?
+
+1. **Regular tests run fast** - Relaxed limits prevent false failures
+2. **Rate limiting is still tested** - Dedicated tests verify it works
+3. **Production security intact** - Strict limits in production
+4. **Per-test control** - Headers provide flexibility
+5. **No test pollution** - Tests don't interfere with each other
 
 ## Troubleshooting
 

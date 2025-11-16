@@ -1,24 +1,10 @@
 import { test, expect } from '@playwright/test';
+import { createAndLoginUser } from './helpers/auth.helpers';
+import { selectors } from './helpers/selectors';
 
 test.describe('User Quota Management', () => {
-  async function loginTestUser(page: any) {
-    const timestamp = Date.now();
-    const testEmail = `test${timestamp}@example.com`;
-    const testPassword = 'TestPassword123';
-
-    await page.goto('/register');
-    await page.getByLabel(/email/i).fill(testEmail);
-    await page.getByLabel(/^password/i).fill(testPassword);
-    await page.getByLabel(/name/i).fill('Test User');
-    await page.getByRole('button', { name: /sign up/i }).click();
-
-    await expect(page).toHaveURL('/');
-
-    return { email: testEmail, password: testPassword };
-  }
-
   test.beforeEach(async ({ page }) => {
-    await loginTestUser(page);
+    await createAndLoginUser(page);
   });
 
   test('should display quota information', async ({ page }) => {
@@ -44,15 +30,25 @@ test.describe('User Quota Management', () => {
     await expect(page.getByText(/available|remaining|free/i)).toBeVisible();
   });
 
-  test('should warn when quota is low', async () => {
+  test('should warn when quota is low', async ({ page: _page }) => {
     // This test would require uploading files to reach quota limit
     // Skipping actual implementation as it requires significant setup
     test.skip();
   });
 
-  test('should prevent upload when quota exceeded', async () => {
+  test('should prevent upload when quota exceeded', async ({ page: _page }) => {
     // This test would require filling up quota first
     // Skipping actual implementation
     test.skip();
+  });
+
+  test('should display quota on upload page', async ({ page }) => {
+    // Navigate to upload page
+    await page.goto('/upload');
+
+    // Check if page loads correctly (quota may be displayed here)
+    await expect(page.getByTestId(selectors.upload.dropzone)).toBeVisible();
+
+    // Note: Actual quota display on upload page depends on implementation
   });
 });

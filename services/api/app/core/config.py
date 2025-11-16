@@ -51,6 +51,7 @@ class Settings(BaseSettings):
     MEDIUM_SIMILARITY_THRESHOLD: float = 0.85
     
     # Rate Limiting
+    RATE_LIMIT_PROFILE: str = "production"  # Profile: production, development, test, test_rate_limit
     RATE_LIMIT_MAX: int = 100  # Max requests per window
     RATE_LIMIT_WINDOW_SECONDS: int = 60  # Time window in seconds
     RATE_LIMIT_AUTH_MAX: int = 10  # Max auth attempts per window
@@ -76,3 +77,47 @@ os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 # Derived values
 MAX_FILE_SIZE_BYTES = settings.MAX_FILE_SIZE_MB * 1024 * 1024
 MAX_TOTAL_UPLOAD_SIZE_BYTES = settings.MAX_TOTAL_UPLOAD_SIZE_MB * 1024 * 1024
+
+
+# Rate Limit Configuration Profiles
+RATE_LIMIT_PROFILES = {
+    "production": {
+        "global": {"max_requests": 100, "window_seconds": 60},
+        "auth_register": {"max_requests": 5, "window_seconds": 60},
+        "auth_login": {"max_requests": 10, "window_seconds": 60},
+        "file_upload": {"max_requests": 20, "window_seconds": 300},
+    },
+    "development": {
+        "global": {"max_requests": 10000, "window_seconds": 60},
+        "auth_register": {"max_requests": 1000, "window_seconds": 60},
+        "auth_login": {"max_requests": 1000, "window_seconds": 60},
+        "file_upload": {"max_requests": 1000, "window_seconds": 60},
+    },
+    "test": {
+        "global": {"max_requests": 10000, "window_seconds": 60},
+        "auth_register": {"max_requests": 1000, "window_seconds": 60},
+        "auth_login": {"max_requests": 1000, "window_seconds": 60},
+        "file_upload": {"max_requests": 1000, "window_seconds": 60},
+    },
+    "test_rate_limit": {
+        "global": {"max_requests": 10, "window_seconds": 60},
+        "auth_register": {"max_requests": 3, "window_seconds": 60},
+        "auth_login": {"max_requests": 5, "window_seconds": 60},
+        "file_upload": {"max_requests": 2, "window_seconds": 60},
+    },
+}
+
+
+def get_rate_limit_config(endpoint: str = "global") -> dict:
+    """
+    Get rate limit configuration for the specified endpoint
+    
+    Args:
+        endpoint: The endpoint identifier (e.g., 'auth_register', 'file_upload', 'global')
+    
+    Returns:
+        Dictionary with 'max_requests' and 'window_seconds'
+    """
+    profile = settings.RATE_LIMIT_PROFILE
+    config = RATE_LIMIT_PROFILES.get(profile, RATE_LIMIT_PROFILES["production"])
+    return config.get(endpoint, config["global"])

@@ -84,14 +84,50 @@ rate_limiter = RateLimiter()
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    """Middleware to enforce rate limiting"""
+    """Middleware to enforce rate limiting with configurable profiles"""
     
     def __init__(self, app, max_requests: int = 100, window_seconds: int = 60):
         super().__init__(app)
-        self.max_requests = max_requests
-        self.window_seconds = window_seconds
+        self.default_max_requests = max_requests
+        self.default_window_seconds = window_seconds
+    
+    def _get_rate_limit_config(self, request: Request) -> tuple[int, int]:
+        """
+        Get rate limit configuration for the request
+        
+        Checks for X-Test-Rate-Limit header to enable/disable rate limiting
+        for specific tests.
+        
+        Returns:
+            Tuple of (max_requests, window_seconds)
+        """
+        # Check for test override header
+        test_rate_limit = request.headers.get("X-Test-Rate-Limit", "").lower()
+        
+        if test_rate_limit == "disabled":
+            # Disable rate limiting for this request
+            return (999999, 60)  # Effectively unlimited
+        elif test_rate_limit == "enabled":
+            # Use strict test_rate_limit profile
+            from app.core.config import get_rate_limit_config
+            config = get_rate_limit_config("global")
+            # Override to use test_rate_limit profile
+            import os
+            original_profile = os.environ.get("RATE_LIMIT_PROFILE", "production")
+            os.environ["RATE_LIMIT_PROFILE"] = "test_rate_limit"
+            config = get_rate_limit_config("global")
+            os.environ["RATE_LIMIT_PROFILE"] = original_profile
+            return (config["max_requests"], config["window_seconds"])
+        else:
+            # Use configured profile-based limits
+            from app.core.config import get_rate_limit_config
+            config = get_rate_limit_config("global")
+            return (config["max_requests"], config["window_seconds"])
     
     async def dispatch(self, request: Request, call_next):
+        # Get rate limit configuration
+        max_requests, window_seconds = self._get_rate_limit_config(request)
+        
         # Get client identifier (IP address or user ID)
         client_ip = request.client.host if request.client else "unknown"
         
@@ -102,20 +138,20 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # Check rate limit
         if not rate_limiter.is_allowed(
             identifier,
-            max_requests=self.max_requests,
-            window_seconds=self.window_seconds
+            max_requests=max_requests,
+            window_seconds=window_seconds
         ):
             logger.warning(f"Rate limit exceeded for {identifier}")
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail=f"Rate limit exceeded. Maximum {self.max_requests} requests per {self.window_seconds} seconds."
+                detail=f"Rate limit exceeded. Maximum {max_requests} requests per {window_seconds} seconds."
             )
         
         response = await call_next(request)
         
         # Add rate limit headers
-        response.headers["X-RateLimit-Limit"] = str(self.max_requests)
-        response.headers["X-RateLimit-Window"] = str(self.window_seconds)
+        response.headers["X-RateLimit-Limit"] = str(max_requests)
+        response.headers["X-RateLimit-Window"] = str(window_seconds)
         
         return response
 

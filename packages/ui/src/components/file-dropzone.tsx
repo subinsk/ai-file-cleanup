@@ -5,9 +5,15 @@ import { cn, formatBytes } from '../lib/utils';
 export interface FileDropzoneProps extends Omit<DropzoneOptions, 'onDrop'> {
   onFilesSelected: (files: File[]) => void;
   className?: string;
+  'data-testid'?: string;
 }
 
-export function FileDropzone({ onFilesSelected, className, ...dropzoneOptions }: FileDropzoneProps) {
+export function FileDropzone({
+  onFilesSelected,
+  className,
+  'data-testid': testId,
+  ...dropzoneOptions
+}: FileDropzoneProps) {
   const { getRootProps, getInputProps, isDragActive, acceptedFiles } = useDropzone({
     ...dropzoneOptions,
     onDrop: (acceptedFiles) => {
@@ -22,11 +28,14 @@ export function FileDropzone({ onFilesSelected, className, ...dropzoneOptions }:
       {...getRootProps()}
       className={cn(
         'relative border-2 border-dashed rounded-lg p-8 transition-colors cursor-pointer',
-        isDragActive ? 'border-primary bg-primary/5' : 'border-muted-foreground/25 hover:border-primary/50',
+        isDragActive
+          ? 'border-primary bg-primary/5'
+          : 'border-muted-foreground/25 hover:border-primary/50',
         className
       )}
+      data-testid={testId}
     >
-      <input {...getInputProps()} />
+      <input {...getInputProps()} data-testid={testId ? `${testId}-input` : undefined} />
 
       <div className="flex flex-col items-center justify-center text-center gap-4">
         {isDragActive ? (
@@ -73,4 +82,3 @@ export function FileDropzone({ onFilesSelected, className, ...dropzoneOptions }:
     </div>
   );
 }
-

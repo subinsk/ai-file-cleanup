@@ -80,6 +80,7 @@ export default function RegisterPage() {
               errorMessage = data.detail;
             } else if (Array.isArray(data.detail)) {
               // Pydantic validation errors (422)
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               const errors = data.detail.map((err: any) => {
                 const field = err.loc ? err.loc[err.loc.length - 1] : 'field';
                 const msg = err.msg;
@@ -169,14 +170,20 @@ export default function RegisterPage() {
         {/* Form */}
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
-            <div className="rounded-md bg-red-50 dark:bg-red-900/20 p-4">
+            <div
+              className="rounded-md bg-red-50 dark:bg-red-900/20 p-4"
+              data-testid="register-form-error"
+            >
               <div className="text-sm text-red-800 dark:text-red-200">{error}</div>
             </div>
           )}
 
           <div className="space-y-4">
             <div>
-              <label htmlFor="name" className="sr-only">
+              <label
+                htmlFor="name"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
                 Full name
               </label>
               <input
@@ -189,11 +196,15 @@ export default function RegisterPage() {
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Full name (optional)"
                 disabled={loading}
+                data-testid="register-form-name"
               />
             </div>
 
             <div>
-              <label htmlFor="email" className="sr-only">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
                 Email address
               </label>
               <input
@@ -207,11 +218,15 @@ export default function RegisterPage() {
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Email address"
                 disabled={loading}
+                data-testid="register-form-email"
               />
             </div>
 
             <div>
-              <label htmlFor="password" className="sr-only">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
                 Password
               </label>
               <div className="relative">
@@ -226,11 +241,14 @@ export default function RegisterPage() {
                   className="appearance-none relative block w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-700 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Password (min 8 characters)"
                   disabled={loading}
+                  data-testid="register-form-password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  data-testid="register-form-toggle-password"
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
@@ -241,7 +259,10 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label htmlFor="confirm-password" className="sr-only">
+              <label
+                htmlFor="confirm-password"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
                 Confirm password
               </label>
               <div className="relative">
@@ -256,11 +277,16 @@ export default function RegisterPage() {
                   className="appearance-none relative block w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-700 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Confirm password"
                   disabled={loading}
+                  data-testid="register-form-confirm-password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                  aria-label={
+                    showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'
+                  }
+                  data-testid="register-form-toggle-confirm-password"
                 >
                   {showConfirmPassword ? (
                     <EyeOff className="h-5 w-5" />
@@ -279,6 +305,7 @@ export default function RegisterPage() {
               type="checkbox"
               required
               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              data-testid="register-form-terms"
             />
             <label htmlFor="terms" className="ml-2 block text-sm text-gray-900 dark:text-gray-300">
               I agree to the{' '}
@@ -297,6 +324,7 @@ export default function RegisterPage() {
               type="submit"
               disabled={loading}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              data-testid="register-form-submit"
             >
               {loading ? (
                 <>

@@ -121,11 +121,12 @@ export default function UploadPage() {
                 maxSize={10 * 1024 * 1024}
                 multiple
                 disabled={isUploading}
+                data-testid="upload-dropzone"
               />
 
               {/* Upload Progress */}
               {isUploading && (
-                <div className="space-y-2">
+                <div className="space-y-2" data-testid="upload-progress">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">
                       Uploading {files.length} file(s)...
@@ -138,7 +139,10 @@ export default function UploadPage() {
 
               {/* Upload Complete */}
               {uploadComplete && (
-                <div className="flex items-center gap-2 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
+                <div
+                  className="flex items-center gap-2 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md"
+                  data-testid="upload-complete"
+                >
                   <CheckCircle className="w-5 h-5 text-green-600" />
                   <span className="text-sm font-medium text-green-600">
                     Upload complete! Redirecting to review...
@@ -148,7 +152,10 @@ export default function UploadPage() {
 
               {/* Error Message */}
               {error && (
-                <div className="p-4 text-sm text-red-600 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                <div
+                  className="p-4 text-sm text-red-600 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md"
+                  data-testid="upload-error"
+                >
                   {error}
                 </div>
               )}
@@ -160,6 +167,7 @@ export default function UploadPage() {
                   disabled={files.length === 0 || isUploading}
                   className="flex-1"
                   size="lg"
+                  data-testid="upload-submit-button"
                 >
                   {isUploading ? (
                     <>
@@ -174,7 +182,12 @@ export default function UploadPage() {
                   )}
                 </Button>
                 {files.length > 0 && !isUploading && (
-                  <Button variant="outline" onClick={handleClear} size="lg">
+                  <Button
+                    variant="outline"
+                    onClick={handleClear}
+                    size="lg"
+                    data-testid="upload-clear-button"
+                  >
                     Clear
                   </Button>
                 )}

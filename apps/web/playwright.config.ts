@@ -29,26 +29,43 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+      testIgnore: /rate-limit\.spec\.ts/,
     },
 
     {
       name: 'firefox',
       use: { ...devices['Desktop Firefox'] },
+      testIgnore: /rate-limit\.spec\.ts/,
     },
 
     {
       name: 'webkit',
       use: { ...devices['Desktop Safari'] },
+      testIgnore: /rate-limit\.spec\.ts/,
     },
 
     /* Test against mobile viewports. */
     {
       name: 'Mobile Chrome',
       use: { ...devices['Pixel 5'] },
+      testIgnore: /rate-limit\.spec\.ts/,
     },
     {
       name: 'Mobile Safari',
       use: { ...devices['iPhone 12'] },
+      testIgnore: /rate-limit\.spec\.ts/,
+    },
+
+    /* Separate project for rate limit tests with strict limits enabled */
+    {
+      name: 'rate-limit-tests',
+      testMatch: /rate-limit\.spec\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
+        extraHTTPHeaders: {
+          'X-Test-Rate-Limit': 'enabled',
+        },
+      },
     },
   ],
 
@@ -58,5 +75,9 @@ export default defineConfig({
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
+    env: {
+      // Set test rate limit profile for API
+      RATE_LIMIT_PROFILE: 'test',
+    },
   },
 });
