@@ -1,5 +1,5 @@
 {
   "buildCommand": "cd ../.. && pnpm turbo build --filter=@ai-cleanup/web...",
-  "installCommand": "cd ../.. && pnpm install",
+  "installCommand": "cd ../.. && pnpm vercel:install",
   "outputDirectory": ".next"
 }

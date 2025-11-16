@@ -43,7 +43,8 @@
     "package:desktop:win": "pnpm --filter=@ai-cleanup/desktop package:win",
     "package:desktop:mac": "pnpm --filter=@ai-cleanup/desktop package:mac",
     "package:desktop:linux": "pnpm --filter=@ai-cleanup/desktop package:linux",
-    "deploy:installers": "powershell -ExecutionPolicy Bypass -File copy-installers-to-web.ps1"
+    "deploy:installers": "powershell -ExecutionPolicy Bypass -File copy-installers-to-web.ps1",
+    "vercel:install": "pnpm install --ignore-scripts"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
