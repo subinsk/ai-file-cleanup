@@ -68,46 +68,119 @@ Visit http://localhost:3000/download to test the download links.
 
 ### Option 2: Production Deployment (Recommended)
 
-For production, host the installers on a CDN or file hosting service:
+For production, host the installers on a CDN or file hosting service. **GitHub Releases is the recommended free solution** that provides unlimited bandwidth, global CDN distribution, and is the industry standard for open-source desktop applications.
 
-1. **GitHub Releases** (Free, recommended for open-source)
-   - Create a new release on GitHub
-   - Upload the installer files as release assets
-   - Update URLs in `apps/web/src/app/download/page.tsx` to point to GitHub release URLs
-   - Example: `https://github.com/yourusername/ai-file-cleanup/releases/download/v1.0.0/AI-File-Cleanup-Setup-1.0.0.exe`
+#### GitHub Releases (Recommended)
 
-2. **AWS S3 + CloudFront**
-   - Upload installers to S3 bucket
-   - Configure CloudFront distribution for fast global downloads
-   - Update URLs in download page to CloudFront URLs
+**Step 1: Build the Installers**
 
-3. **Cloudflare R2**
-   - Similar to S3 but with free egress
-   - Upload files to R2 bucket
-   - Use Cloudflare CDN for distribution
-
-4. **Other Options**
-   - Azure Blob Storage + CDN
-   - DigitalOcean Spaces
-   - Vercel Blob Storage
-
-### Updating Download URLs
-
-Edit `apps/web/src/app/download/page.tsx` and update the href attributes:
-
-```tsx
-// Change from:
-href = '/downloads/AI-File-Cleanup-Setup-1.0.0.exe';
-
-// To your production URL:
-href = 'https://your-cdn.com/releases/v1.0.0/AI-File-Cleanup-Setup-1.0.0.exe';
+```bash
+cd apps/desktop
+pnpm run package:win
 ```
+
+The installers will be created in `apps/desktop/dist-package/`:
+
+- `AI File Cleanup-Setup-1.0.0.exe` (NSIS installer)
+- `AI File Cleanup-1.0.0.msi` (MSI installer)
+- `AI File Cleanup 1.0.0.exe` (Portable version)
+
+**Step 2: Prepare Files for Upload**
+
+Rename files to use hyphens instead of spaces for better URL compatibility:
+
+```bash
+cd apps/desktop/dist-package
+
+# Rename files (if needed)
+# The NSIS installer may already be named correctly
+# Otherwise, rename to:
+# - AI-File-Cleanup-1.0.0.exe
+# - AI-File-Cleanup-1.0.0.msi
+# - AI-File-Cleanup-1.0.0-Portable.exe
+
+# Create ZIP archive (optional but recommended)
+powershell Compress-Archive -Path "AI File Cleanup 1.0.0.exe" -DestinationPath "AI-File-Cleanup-1.0.0-win.zip"
+```
+
+**Step 3: Create a GitHub Release**
+
+1. Go to your GitHub repository: `https://github.com/subinsk/ai-file-cleanup`
+2. Click on **"Releases"** in the right sidebar
+3. Click **"Draft a new release"**
+4. Fill in the release details:
+   - **Tag version**: `v1.0.0` (must start with 'v')
+   - **Release title**: `v1.0.0 - Initial Release`
+   - **Description**: Add release notes describing features and changes
+5. **Upload installer files** by dragging them into the "Attach binaries" section:
+   - `AI-File-Cleanup-1.0.0.exe` (NSIS installer)
+   - `AI-File-Cleanup-1.0.0.msi` (MSI installer)
+   - `AI-File-Cleanup-1.0.0-Portable.exe` (Portable version)
+   - `AI-File-Cleanup-1.0.0-win.zip` (ZIP archive)
+6. Click **"Publish release"**
+
+**Step 4: Get Download URLs**
+
+After publishing, your files will be available at:
+
+```
+https://github.com/subinsk/ai-file-cleanup/releases/download/v1.0.0/AI-File-Cleanup-1.0.0.exe
+https://github.com/subinsk/ai-file-cleanup/releases/download/v1.0.0/AI-File-Cleanup-1.0.0.msi
+https://github.com/subinsk/ai-file-cleanup/releases/download/v1.0.0/AI-File-Cleanup-1.0.0-Portable.exe
+https://github.com/subinsk/ai-file-cleanup/releases/download/v1.0.0/AI-File-Cleanup-1.0.0-win.zip
+```
+
+**Step 5: Update Download Page**
+
+The download page (`apps/web/src/app/download/page.tsx`) is already configured to use GitHub Releases URLs. When you create the release with the correct file names, the downloads will work automatically.
+
+**Why GitHub Releases?**
+
+✅ **Free**: Unlimited bandwidth and storage for releases  
+✅ **Global CDN**: GitHub automatically distributes files worldwide  
+✅ **Version Control**: Easy to manage multiple versions  
+✅ **Industry Standard**: Used by major projects (VS Code, Electron, etc.)  
+✅ **No Serverless Limits**: Bypasses Vercel's 50 MB function size limit  
+✅ **Reliable**: GitHub's infrastructure handles high traffic  
+✅ **Simple**: No additional accounts or configuration needed
+
+#### Alternative Options
+
+**AWS S3 + CloudFront**
+
+- Upload installers to S3 bucket
+- Configure CloudFront distribution for fast global downloads
+- Update URLs in download page to CloudFront URLs
+- Cost: ~$0.01-$0.10 per GB after free tier
+
+**Cloudflare R2**
+
+- Similar to S3 but with free egress bandwidth
+- Upload files to R2 bucket
+- Use Cloudflare CDN for distribution
+- Cost: Free tier includes 10 GB/month storage
+
+**Other Options**
+
+- Azure Blob Storage + CDN
+- DigitalOcean Spaces
+- Vercel Blob Storage (limited free tier)
+
+### Important Notes for Vercel Deployment
+
+⚠️ **Do NOT serve large installer files through Vercel serverless functions or API routes:**
+
+- Vercel has a 50 MB response size limit for serverless functions
+- Large files (80-150 MB installers) will cause "Internal Server Error"
+- Always use external hosting like GitHub Releases for installer files
+
+The previous API route approach (`/api/download/[filename]`) has been removed because it's incompatible with Vercel's serverless architecture.
 
 ## Version Updates
 
 When releasing a new version:
 
-1. Update version in `apps/desktop/package.json`:
+1. **Update version in `apps/desktop/package.json`:**
 
    ```json
    {
@@ -115,19 +188,39 @@ When releasing a new version:
    }
    ```
 
-2. Rebuild the installers:
+2. **Rebuild the installers:**
 
    ```bash
    cd apps/desktop
    pnpm run package:win
    ```
 
-3. Upload new files to your hosting service
+3. **Create a new GitHub Release:**
+   - Go to https://github.com/subinsk/ai-file-cleanup/releases
+   - Click "Draft a new release"
+   - Use tag version: `v1.1.0`
+   - Upload the new installer files
+   - Add release notes describing what's new
+   - Publish the release
 
-4. Update download page (`apps/web/src/app/download/page.tsx`):
-   - Update version numbers displayed to users
-   - Update download URLs to point to new version
-   - Update release notes section
+4. **Update download page (`apps/web/src/app/download/page.tsx`):**
+   - Update version numbers displayed to users (line 38)
+   - Update download URLs to point to new version (v1.1.0)
+   - Update release notes section (lines 264-302)
+
+   Example URL changes:
+
+   ```tsx
+   // From:
+   href =
+     'https://github.com/subinsk/ai-file-cleanup/releases/download/v1.0.0/AI-File-Cleanup-1.0.0.exe';
+
+   // To:
+   href =
+     'https://github.com/subinsk/ai-file-cleanup/releases/download/v1.1.0/AI-File-Cleanup-1.1.0.exe';
+   ```
+
+5. **Test the download links** before announcing the release
 
 ## Code Signing (Recommended for Production)
 

@@ -39,14 +39,14 @@ export default function DownloadPage() {
             </p>
             <div className="flex gap-3 mb-4">
               <a
-                href="/api/download/AI-File-Cleanup-1.0.0.exe"
+                href="https://github.com/subinsk/ai-file-cleanup/releases/download/v1.0.0/AI-File-Cleanup-1.0.0.exe"
                 className="flex-1 px-6 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-colors font-medium shadow-md hover:shadow-lg text-center"
               >
                 <div className="text-sm opacity-90 mb-1">NSIS Installer</div>
                 <div className="font-semibold">.exe • 80 MB</div>
               </a>
               <a
-                href="/api/download/AI-File-Cleanup-1.0.0.msi"
+                href="https://github.com/subinsk/ai-file-cleanup/releases/download/v1.0.0/AI-File-Cleanup-1.0.0.msi"
                 className="flex-1 px-6 py-4 bg-green-600 text-white rounded-lg hover:bg-green-700 active:bg-green-800 transition-colors font-medium shadow-md hover:shadow-lg text-center"
               >
                 <div className="text-sm opacity-90 mb-1">MSI Installer</div>
@@ -59,13 +59,13 @@ export default function DownloadPage() {
               </p>
               <div className="flex gap-3 justify-center flex-wrap">
                 <a
-                  href="/api/download/AI-File-Cleanup-1.0.0-Portable.exe"
+                  href="https://github.com/subinsk/ai-file-cleanup/releases/download/v1.0.0/AI-File-Cleanup-1.0.0-Portable.exe"
                   className="text-sm px-4 py-2 border border-blue-600 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                 >
                   Portable (.exe)
                 </a>
                 <a
-                  href="/api/download/AI-File-Cleanup-1.0.0-win.zip"
+                  href="https://github.com/subinsk/ai-file-cleanup/releases/download/v1.0.0/AI-File-Cleanup-1.0.0-win.zip"
                   className="text-sm px-4 py-2 border border-blue-600 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                 >
                   ZIP Archive
