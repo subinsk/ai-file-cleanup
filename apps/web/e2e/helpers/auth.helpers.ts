@@ -42,7 +42,7 @@ export async function registerUser(
 
   // Wait for redirect to home page (more flexible URL matching)
   // Registration might redirect to / or another page after successful registration
-  await page.waitForURL((url) => !url.includes('/register'), { timeout: 15000 });
+  await page.waitForURL((url) => !url.href.includes('/register'), { timeout: 15000 });
 
   return credentials;
 }

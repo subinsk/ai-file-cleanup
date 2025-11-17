@@ -47,8 +47,10 @@ export async function GET(request: NextRequest, { params }: { params: { filename
     // Convert Node.js stream to Web ReadableStream
     const webStream = new ReadableStream({
       start(controller) {
-        stream.on('data', (chunk: Buffer) => {
-          controller.enqueue(new Uint8Array(chunk));
+        stream.on('data', (chunk: string | Buffer) => {
+          controller.enqueue(
+            new Uint8Array(typeof chunk === 'string' ? Buffer.from(chunk) : chunk)
+          );
         });
         stream.on('end', () => {
           controller.close();
