@@ -13,11 +13,11 @@ RUN apt-get update && apt-get install -y \
 # Set working directory
 WORKDIR /app
 
-# Copy requirements from services/api
+# Copy requirements (context is repo root, so path is from repo root)
 COPY services/api/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the Prisma schema from the monorepo (build context is repo root)
+# Copy the Prisma schema from the monorepo (context is repo root)
 COPY packages/db/prisma/schema.prisma /tmp/schema.prisma
 
 # Generate Prisma client with the schema
@@ -39,7 +39,7 @@ WORKDIR /app
 COPY --from=builder /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
-# Copy application code from services/api (build context is repo root)
+# Copy application code (context is repo root)
 COPY services/api/ .
 
 # Create necessary directories
