@@ -1,23 +1,69 @@
-__pycache__
-*.pyc
-*.pyo
-*.pyd
-.Python
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
 *.so
-*.egg
-*.egg-info
-dist
-build
-.env
-.venv
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
 venv/
+.venv/
 ENV/
-.git
-.gitignore
-.dockerignore
-Dockerfile
-README.md
-*.md
-.vscode
-.idea
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+*.coveragerc
+
+# Logs
 *.log
+logs/
+*.log.*
+
+# Temporary files
+temp_files/
+uploads/
+*.tmp
+
+# Node modules (not needed in API)
+node_modules/
+
+# Git
+.git/
+.gitignore
+
+# Environment files
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Prisma (generated during build)
+prisma/generated/
+
+# Database
+*.db
+*.sqlite
+
+# Documentation
+*.md
+docs/
+
+# Tests
+tests/
+test_*.py
+*_test.py

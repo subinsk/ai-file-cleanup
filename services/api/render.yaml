@@ -1,14 +1,17 @@
 services:
   - type: web
     name: ai-cleanup-api
-    runtime: python
+    runtime: docker
     region: oregon
     plan: free
-    buildCommand: pip install -r requirements.txt && prisma generate
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    # Root directory for monorepo (triggers deploys on changes in services/api)
+    rootDir: services/api
+    # Docker configuration - paths relative to repo root
+    dockerfilePath: ./services/api/Dockerfile
+    dockerContext: ./
+    # Docker build is automatic from Dockerfile
+    # No buildCommand or startCommand needed - Dockerfile handles it
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.0
       - key: NODE_ENV
         value: production
       - key: LOG_LEVEL
