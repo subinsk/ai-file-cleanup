@@ -1,16 +1,13 @@
 services:
   - type: web
     name: ai-cleanup-api
-    runtime: docker
+    runtime: python
     region: oregon
     plan: free
     # Root directory for monorepo (triggers deploys on changes in services/api)
     rootDir: services/api
-    # Docker configuration - Dockerfile is in rootDir, context needs parent for schema access
-    dockerfilePath: ./Dockerfile
-    dockerContext: ../..
-    # Docker build is automatic from Dockerfile
-    # No buildCommand or startCommand needed - Dockerfile handles it
+    buildCommand: PRISMA_SKIP_POSTINSTALL_GENERATE=1 PRISMA_CLI_BINARY_TARGETS=native pip install -r requirements.txt && PRISMA_SKIP_POSTINSTALL_GENERATE=1 PRISMA_CLI_BINARY_TARGETS=native python -m prisma generate --schema ../../packages/db/prisma/schema.prisma
+    startCommand: python run.py
     envVars:
       - key: NODE_ENV
         value: production

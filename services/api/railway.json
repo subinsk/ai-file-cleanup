@@ -1,11 +1,10 @@
 {
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
-    "builder": "DOCKERFILE",
-    "dockerfilePath": "Dockerfile"
+    "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "prisma generate && uvicorn app.main:app --host 0.0.0.0 --port $PORT",
+    "startCommand": "PRISMA_SKIP_POSTINSTALL_GENERATE=1 PRISMA_CLI_BINARY_TARGETS=native python -m prisma generate --schema ../../packages/db/prisma/schema.prisma && python run.py",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   }

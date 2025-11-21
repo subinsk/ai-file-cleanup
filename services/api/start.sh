@@ -6,8 +6,8 @@ if [ -d "venv" ]; then
     source venv/bin/activate
 fi
 
-# Generate Prisma client
-prisma generate
+# Generate Prisma client using Python CLI
+python -m prisma generate --schema ../../packages/db/prisma/schema.prisma
 
 # Start server
 python run.py
