@@ -1,0 +1,8 @@
+version: '2'
+authtoken: PLACEHOLDER_AUTH_TOKEN
+
+tunnels:
+  ml-service:
+    proto: http
+    addr: 3002
+    domain: PLACEHOLDER_STATIC_DOMAIN

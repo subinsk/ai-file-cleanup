@@ -13,9 +13,8 @@ pip install -r requirements.txt
 echo ""
 echo "🔄 Generating Prisma Python client..."
 
-# Set environment variables to prevent Node.js installation attempts
+# Set environment variable to prevent Node.js installation attempts
 export PRISMA_SKIP_POSTINSTALL_GENERATE=1
-export PRISMA_CLI_BINARY_TARGETS=native
 
 # Get the schema path
 SCHEMA_PATH="../../packages/db/prisma/schema.prisma"
