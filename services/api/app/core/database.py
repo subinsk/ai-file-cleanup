@@ -1,7 +1,7 @@
 """Database connection using SQLAlchemy (Neon PostgreSQL)"""
 import logging
-import re
 from typing import AsyncGenerator
+from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from app.core.config import settings
 
@@ -11,10 +11,25 @@ logger = logging.getLogger(__name__)
 # Convert postgresql:// to postgresql+asyncpg://
 database_url = settings.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
 
-# Remove sslmode parameter (asyncpg doesn't support it, uses connect_args instead)
-database_url = re.sub(r'[?&]sslmode=[^&]*&?', '', database_url)
-# Clean up any trailing ? or &
-database_url = re.sub(r'[?&]$', '', database_url)
+# Parse URL to remove asyncpg-incompatible parameters
+parsed = urlparse(database_url)
+query_params = parse_qs(parsed.query)
+
+# Remove parameters that asyncpg doesn't support
+# These will be passed via connect_args instead
+query_params.pop('sslmode', None)
+query_params.pop('channel_binding', None)
+
+# Reconstruct URL without unsupported parameters
+new_query = urlencode(query_params, doseq=True)
+database_url = urlunparse((
+    parsed.scheme,
+    parsed.netloc,
+    parsed.path,
+    parsed.params,
+    new_query,
+    parsed.fragment
+))
 
 # Create async engine with SSL for Neon
 # Neon requires SSL, so we pass it via connect_args
