@@ -1,5 +1,8 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
+# Generate Prisma Python client before commit
+node scripts/generate-prisma-client.js
+
 pnpm lint-staged
 

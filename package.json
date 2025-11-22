@@ -27,6 +27,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
     "db:generate": "pnpm --filter=@ai-cleanup/db db:generate",
+    "api:generate-prisma": "node scripts/generate-prisma-client.js",
     "db:push": "pnpm --filter=@ai-cleanup/db db:push",
     "db:migrate": "pnpm --filter=@ai-cleanup/db db:migrate",
     "db:migrate:deploy": "pnpm --filter=@ai-cleanup/db db:migrate:deploy",

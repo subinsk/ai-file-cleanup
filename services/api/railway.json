@@ -4,7 +4,7 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "PRISMA_SKIP_POSTINSTALL_GENERATE=1 python -m prisma generate --schema ../../packages/db/prisma/schema.prisma && python run.py",
+    "startCommand": "python run.py",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   }

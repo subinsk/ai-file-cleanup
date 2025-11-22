@@ -44,5 +44,6 @@ module.exports = {
     '*.config.js',
     '*.config.ts',
     'packages/db/scripts/*.js', // Compiled JS files
+    'scripts/generate-prisma-client.js', // Node.js script using CommonJS
   ],
 };

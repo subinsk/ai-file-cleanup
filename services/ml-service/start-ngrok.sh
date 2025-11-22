@@ -10,6 +10,58 @@ if [ -f .env ]; then
     set +a
 fi
 
+# Check if ML service is running on port 3002
+echo "Checking if ML service is running on port 3002..."
+if ! nc -z localhost 3002 2>/dev/null && ! command -v nc &> /dev/null; then
+    # Fallback: try using curl or wget
+    if command -v curl &> /dev/null; then
+        if ! curl -s http://localhost:3002/health >/dev/null 2>&1; then
+            echo "ERROR: ML service is not running on port 3002"
+            echo "Please start the ML service first:"
+            echo "  cd services/ml-service"
+            echo "  python run.py"
+            echo ""
+            echo "Or use: ./start.sh"
+            exit 1
+        fi
+    elif command -v wget &> /dev/null; then
+        if ! wget -q --spider http://localhost:3002/health 2>/dev/null; then
+            echo "ERROR: ML service is not running on port 3002"
+            echo "Please start the ML service first:"
+            echo "  cd services/ml-service"
+            echo "  python run.py"
+            echo ""
+            echo "Or use: ./start.sh"
+            exit 1
+        fi
+    else
+        # Last resort: check if port is listening
+        if command -v lsof &> /dev/null; then
+            if ! lsof -i :3002 >/dev/null 2>&1; then
+                echo "ERROR: ML service is not running on port 3002"
+                echo "Please start the ML service first:"
+                echo "  cd services/ml-service"
+                echo "  python run.py"
+                echo ""
+                echo "Or use: ./start.sh"
+                exit 1
+            fi
+        fi
+    fi
+elif command -v nc &> /dev/null; then
+    if ! nc -z localhost 3002 2>/dev/null; then
+        echo "ERROR: ML service is not running on port 3002"
+        echo "Please start the ML service first:"
+        echo "  cd services/ml-service"
+        echo "  python run.py"
+        echo ""
+        echo "Or use: ./start.sh"
+        exit 1
+    fi
+fi
+echo "ML service is running on port 3002"
+echo
+
 # Check if ngrok is installed
 if ! command -v ngrok &> /dev/null; then
     echo "ERROR: ngrok is not installed or not in PATH"

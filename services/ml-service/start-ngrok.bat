@@ -11,6 +11,21 @@ if exist .env (
     )
 )
 
+REM Check if ML service is running on port 3002
+echo Checking if ML service is running on port 3002...
+netstat -an | findstr ":3002" | findstr "LISTENING" >nul 2>&1
+if %ERRORLEVEL% NEQ 0 (
+    echo ERROR: ML service is not running on port 3002
+    echo Please start the ML service first:
+    echo   cd services\ml-service
+    echo   python run.py
+    echo.
+    echo Or use: start.bat
+    exit /b 1
+)
+echo ML service is running on port 3002
+echo.
+
 REM Check if ngrok is installed
 where ngrok >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
