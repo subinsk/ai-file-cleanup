@@ -6,7 +6,8 @@ services:
     plan: free
     # Root directory for monorepo (triggers deploys on changes in services/api)
     rootDir: services/api
-    buildCommand: PRISMA_SKIP_POSTINSTALL_GENERATE=1 pip install -r requirements.txt
+    # Pure Python build - no Node.js required
+    buildCommand: pip install -r requirements.txt
     startCommand: python run.py
     envVars:
       - key: NODE_ENV

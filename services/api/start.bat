@@ -15,9 +15,8 @@ if exist venv\Scripts\activate.bat (
     call venv\Scripts\activate.bat
 )
 
-REM Generate Prisma client using Python CLI
-echo [%date% %time%] Generating Prisma client... >> %logfile% 2>&1
-python -m prisma generate --schema ..\..\packages\db\prisma\schema.prisma >> %logfile% 2>&1
+REM Prisma client should be pre-generated (committed to repo)
+REM If you need to regenerate, run: python -m prisma generate --schema ..\..\packages\db\prisma\schema.prisma
 
 REM Start server with logging
 echo [%date% %time%] Starting API service... >> %logfile% 2>&1

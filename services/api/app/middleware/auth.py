@@ -2,9 +2,12 @@
 import logging
 from fastapi import Depends, HTTPException, Cookie, Header
 from typing import Optional
+from sqlalchemy import select
+from uuid import UUID
 
-from app.core.database import get_db
+from app.core.database import AsyncSessionLocal
 from app.core.security import decode_access_token
+from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
@@ -42,18 +45,29 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    user_id = payload.get("sub")
+    user_id_str = payload.get("sub")
     
-    if not user_id:
+    if not user_id_str:
         raise HTTPException(
             status_code=401,
             detail="Invalid authentication credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
+    # Convert string ID to UUID
+    try:
+        user_id = UUID(user_id_str)
+    except (ValueError, AttributeError):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid user ID format",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
     # Get user from database
-    db = get_db()
-    user = await db.user.find_unique(where={"id": user_id})
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(select(User).where(User.id == user_id))
+        user = result.scalar_one_or_none()
     
     if not user:
         raise HTTPException(

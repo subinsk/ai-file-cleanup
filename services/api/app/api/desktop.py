@@ -4,11 +4,14 @@ import os
 from typing import List, Dict, Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+from sqlalchemy import select
+from uuid import UUID
 
-from app.core.database import get_db
+from app.core.database import AsyncSessionLocal
 from app.api.dedupe import _find_duplicate_groups
 from app.services.file_processor import file_processor
 from app.services.ml_client import MLServiceClient
+from app.models.license_key import LicenseKey
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -37,13 +40,22 @@ class DedupePreviewResponse(BaseModel):
 @router.post("/validate-license", response_model=ValidateLicenseResponse)
 async def validate_license(request: ValidateLicenseRequest):
     """Validate a license key for desktop app"""
-    db = get_db()
-    
     try:
+        # Convert license key string to UUID
+        try:
+            key_uuid = UUID(request.licenseKey)
+        except ValueError:
+            return ValidateLicenseResponse(
+                valid=False,
+                message="Invalid license key format"
+            )
+        
         # Find the license key
-        license_key = await db.licensekey.find_first(
-            where={"key": request.licenseKey}
-        )
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(LicenseKey).where(LicenseKey.key == key_uuid)
+            )
+            license_key = result.scalar_one_or_none()
         
         if not license_key:
             return ValidateLicenseResponse(

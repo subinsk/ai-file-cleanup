@@ -5,6 +5,8 @@ Avoids recomputing embeddings for files with the same content
 import logging
 import asyncio
 from typing import List, Dict, Any, Optional, Tuple
+from sqlalchemy import select
+
 from app.services.ml_client import ml_client
 
 logger = logging.getLogger(__name__)
@@ -129,25 +131,27 @@ class EmbeddingCacheService:
             
             # Try to get from database if available
             try:
-                from app.core.database import get_db
-                db = get_db()
+                from app.core.database import AsyncSessionLocal
+                from app.models.file import File
+                from app.models.file_embedding import FileEmbedding
                 
-                # Find file by SHA-256
-                files = await db.file.find_many(where={'sha256': sha256}, take=1)
-                if files:
-                    file = files[0]
-                    # Get embedding for this file
-                    embedding_record = await db.fileembedding.find_unique(
-                        where={'fileId': file.id},
-                        include={'file': True}
+                async with AsyncSessionLocal() as session:
+                    # Find file by SHA-256
+                    result = await session.execute(
+                        select(File).where(File.sha256 == sha256).limit(1)
                     )
-                    if embedding_record and embedding_record.embedding:
-                        # Prisma returns vector as list or string, convert if needed
-                        embedding_list = embedding_record.embedding
-                        if isinstance(embedding_list, str):
-                            # Parse vector string format
-                            embedding_list = [float(x) for x in embedding_list.strip('[]').split(',')]
-                        if isinstance(embedding_list, list):
+                    file = result.scalar_one_or_none()
+                    
+                    if file:
+                        # Get embedding for this file
+                        emb_result = await session.execute(
+                            select(FileEmbedding).where(FileEmbedding.file_id == file.id)
+                        )
+                        embedding_record = emb_result.scalar_one_or_none()
+                        
+                        if embedding_record and embedding_record.embedding:
+                            # pgvector returns list directly
+                            embedding_list = embedding_record.embedding
                             _embedding_cache['text'][sha256] = embedding_list
                             return embedding_list
             except Exception as db_error:
@@ -168,25 +172,27 @@ class EmbeddingCacheService:
             
             # Try to get from database if available
             try:
-                from app.core.database import get_db
-                db = get_db()
+                from app.core.database import AsyncSessionLocal
+                from app.models.file import File
+                from app.models.file_embedding import FileEmbedding
                 
-                # Find file by SHA-256
-                files = await db.file.find_many(where={'sha256': sha256}, take=1)
-                if files:
-                    file = files[0]
-                    # Get embedding for this file
-                    embedding_record = await db.fileembedding.find_unique(
-                        where={'fileId': file.id},
-                        include={'file': True}
+                async with AsyncSessionLocal() as session:
+                    # Find file by SHA-256
+                    result = await session.execute(
+                        select(File).where(File.sha256 == sha256).limit(1)
                     )
-                    if embedding_record and embedding_record.embeddingImg:
-                        # Prisma returns vector as list or string, convert if needed
-                        embedding_list = embedding_record.embeddingImg
-                        if isinstance(embedding_list, str):
-                            # Parse vector string format
-                            embedding_list = [float(x) for x in embedding_list.strip('[]').split(',')]
-                        if isinstance(embedding_list, list):
+                    file = result.scalar_one_or_none()
+                    
+                    if file:
+                        # Get embedding for this file
+                        emb_result = await session.execute(
+                            select(FileEmbedding).where(FileEmbedding.file_id == file.id)
+                        )
+                        embedding_record = emb_result.scalar_one_or_none()
+                        
+                        if embedding_record and embedding_record.embedding_img:
+                            # pgvector returns list directly
+                            embedding_list = embedding_record.embedding_img
                             _embedding_cache['image'][sha256] = embedding_list
                             return embedding_list
             except Exception as db_error:
@@ -205,28 +211,32 @@ class EmbeddingCacheService:
             
             # Try to store in database if available
             try:
-                from app.core.database import get_db
-                db = get_db()
+                from app.core.database import AsyncSessionLocal
+                from app.models.file import File
+                from app.models.file_embedding import FileEmbedding
+                from sqlalchemy.dialects.postgresql import insert
                 
-                # Find file by SHA-256
-                files = await db.file.find_many(where={'sha256': sha256}, take=1)
-                if files:
-                    file = files[0]
-                    # Upsert embedding using Prisma
-                    await db.fileembedding.upsert(
-                        where={'fileId': file.id},
-                        data={
-                            'create': {
-                                'fileId': file.id,
-                                'kind': 'text',
-                                'embedding': embedding
-                            },
-                            'update': {
-                                'embedding': embedding
-                            }
-                        }
+                async with AsyncSessionLocal() as session:
+                    # Find file by SHA-256
+                    result = await session.execute(
+                        select(File).where(File.sha256 == sha256).limit(1)
                     )
-                    logger.debug(f"Cached text embedding in DB for SHA-256: {sha256[:16]}...")
+                    file = result.scalar_one_or_none()
+                    
+                    if file:
+                        # Upsert embedding using SQLAlchemy
+                        stmt = insert(FileEmbedding).values(
+                            file_id=file.id,
+                            kind='text',
+                            embedding=embedding
+                        )
+                        stmt = stmt.on_conflict_do_update(
+                            index_elements=['file_id'],
+                            set_={'embedding': embedding}
+                        )
+                        await session.execute(stmt)
+                        await session.commit()
+                        logger.debug(f"Cached text embedding in DB for SHA-256: {sha256[:16]}...")
             except Exception as db_error:
                 logger.debug(f"Database cache failed (using in-memory only): {db_error}")
             
@@ -241,28 +251,32 @@ class EmbeddingCacheService:
             
             # Try to store in database if available
             try:
-                from app.core.database import get_db
-                db = get_db()
+                from app.core.database import AsyncSessionLocal
+                from app.models.file import File
+                from app.models.file_embedding import FileEmbedding
+                from sqlalchemy.dialects.postgresql import insert
                 
-                # Find file by SHA-256
-                files = await db.file.find_many(where={'sha256': sha256}, take=1)
-                if files:
-                    file = files[0]
-                    # Upsert embedding using Prisma
-                    await db.fileembedding.upsert(
-                        where={'fileId': file.id},
-                        data={
-                            'create': {
-                                'fileId': file.id,
-                                'kind': 'image',
-                                'embeddingImg': embedding
-                            },
-                            'update': {
-                                'embeddingImg': embedding
-                            }
-                        }
+                async with AsyncSessionLocal() as session:
+                    # Find file by SHA-256
+                    result = await session.execute(
+                        select(File).where(File.sha256 == sha256).limit(1)
                     )
-                    logger.debug(f"Cached image embedding in DB for SHA-256: {sha256[:16]}...")
+                    file = result.scalar_one_or_none()
+                    
+                    if file:
+                        # Upsert embedding using SQLAlchemy
+                        stmt = insert(FileEmbedding).values(
+                            file_id=file.id,
+                            kind='image',
+                            embedding_img=embedding
+                        )
+                        stmt = stmt.on_conflict_do_update(
+                            index_elements=['file_id'],
+                            set_={'embedding_img': embedding}
+                        )
+                        await session.execute(stmt)
+                        await session.commit()
+                        logger.debug(f"Cached image embedding in DB for SHA-256: {sha256[:16]}...")
             except Exception as db_error:
                 logger.debug(f"Database cache failed (using in-memory only): {db_error}")
             

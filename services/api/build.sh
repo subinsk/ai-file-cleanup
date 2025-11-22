@@ -9,23 +9,9 @@ echo "=================================================="
 echo "📦 Installing Python dependencies..."
 pip install -r requirements.txt
 
-# Generate Prisma client
 echo ""
-echo "🔄 Generating Prisma Python client..."
-
-# Set environment variable to prevent Node.js installation attempts
-export PRISMA_SKIP_POSTINSTALL_GENERATE=1
-
-# Get the schema path
-SCHEMA_PATH="../../packages/db/prisma/schema.prisma"
-
-# Generate using Python Prisma
-if python -m prisma generate --schema "$SCHEMA_PATH"; then
-    echo "✅ Prisma client generated successfully!"
-else
-    echo "⚠️  Prisma generation had issues, but continuing..."
-    echo "ℹ️  Client will attempt to generate on first use"
-fi
+echo "ℹ️  Prisma client should be pre-generated and committed to repo"
+echo "ℹ️  If missing, generate locally: python -m prisma generate --schema ../../packages/db/prisma/schema.prisma"
 
 echo ""
 echo "✅ Build complete!"

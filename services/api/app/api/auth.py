@@ -1,13 +1,15 @@
 """Authentication endpoints"""
 import logging
-from fastapi import APIRouter, HTTPException, Response, Cookie
+from fastapi import APIRouter, HTTPException, Response, Cookie, Depends
 from pydantic import BaseModel, EmailStr, validator
 from typing import Optional
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
+from app.core.database import get_session
 from app.core.security import hash_password, verify_password, create_access_token
-from fastapi import Depends
 from app.middleware.auth import get_current_user
+from app.models.user import User
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -56,13 +58,12 @@ class UserResponse(BaseModel):
 
 
 @router.post("/register", response_model=UserResponse)
-async def register(request: RegisterRequest):
+async def register(request: RegisterRequest, session: AsyncSession = Depends(get_session)):
     """Register a new user"""
-    db = get_db()
-    
     try:
         # Check if user exists
-        existing_user = await db.user.find_first(where={"email": request.email})
+        result = await session.execute(select(User).where(User.email == request.email))
+        existing_user = result.scalar_one_or_none()
         
         if existing_user:
             raise HTTPException(status_code=400, detail="Email already registered")
@@ -71,21 +72,21 @@ async def register(request: RegisterRequest):
         password_hash = hash_password(request.password)
         
         # Create user
-        user = await db.user.create(
-            data={
-                "email": request.email,
-                "passwordHash": password_hash,
-                "name": request.name,
-            }
+        user = User(
+            email=request.email,
+            password_hash=password_hash,
+            name=request.name,
         )
+        session.add(user)
+        await session.flush()  # Flush to get the ID
         
         logger.info(f"User registered: {user.email}")
         
         return UserResponse(
-            id=user.id,
+            id=str(user.id),
             email=user.email,
             name=user.name,
-            created_at=user.createdAt.isoformat(),
+            created_at=user.created_at.isoformat(),
         )
         
     except HTTPException:
@@ -96,23 +97,22 @@ async def register(request: RegisterRequest):
 
 
 @router.post("/login")
-async def login(request: LoginRequest, response: Response):
+async def login(request: LoginRequest, response: Response, session: AsyncSession = Depends(get_session)):
     """Login user and return JWT token"""
-    db = get_db()
-    
     try:
         # Find user
-        user = await db.user.find_first(where={"email": request.email})
+        result = await session.execute(select(User).where(User.email == request.email))
+        user = result.scalar_one_or_none()
         
         if not user:
             raise HTTPException(status_code=401, detail="Invalid credentials")
         
         # Verify password
-        if not verify_password(request.password, user.passwordHash):
+        if not verify_password(request.password, user.password_hash):
             raise HTTPException(status_code=401, detail="Invalid credentials")
         
         # Create access token
-        access_token = create_access_token(data={"sub": user.id})
+        access_token = create_access_token(data={"sub": str(user.id)})
         
         # Set httpOnly cookie
         from app.core.config import settings
@@ -134,10 +134,10 @@ async def login(request: LoginRequest, response: Response):
             "access_token": access_token,
             "token_type": "bearer",
             "user": UserResponse(
-                id=user.id,
+                id=str(user.id),
                 email=user.email,
                 name=user.name,
-                created_at=user.createdAt.isoformat(),
+                created_at=user.created_at.isoformat(),
             )
         }
         
@@ -156,11 +156,11 @@ async def logout(response: Response):
 
 
 @router.get("/me", response_model=UserResponse)
-async def get_current_user_info(user=Depends(get_current_user)):
+async def get_current_user_info(user: User = Depends(get_current_user)):
     """Get current user information"""
     return UserResponse(
-        id=user.id,
+        id=str(user.id),
         email=user.email,
         name=user.name,
-        created_at=user.createdAt.isoformat(),
+        created_at=user.created_at.isoformat(),
     )

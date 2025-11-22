@@ -1,69 +1,37 @@
-# Prisma Client Setup for Pure Python Deployment
+# Database Setup
 
-## The Problem
+**Note**: This project has migrated from Prisma Python to SQLAlchemy for API queries while maintaining Prisma for schema management.
 
-Prisma Python (`prisma-client-py`) **requires Node.js** to generate the client. It internally calls `pnpm add prisma@5.17.0` during generation, which fails in pure Python environments like Render.
+## Current Architecture
 
-## The Solution
+See **[DATABASE.md](./DATABASE.md)** for complete documentation.
 
-**Automatic Generation on Commit** - A git pre-commit hook automatically generates the Prisma client before each commit, ensuring it's always up-to-date in the repo.
+### Quick Overview
 
-## How It Works
+- **Schema Management**: Prisma (in `packages/db/`)
+- **API Queries**: SQLAlchemy (pure Python, no Node.js needed)
+- **Deployment**: Pure Python on Render (no Node.js required)
 
-1. **Pre-commit Hook** - When you commit, the hook automatically:
-   - Generates the Prisma client using Python (requires Node.js locally)
-   - Stages the generated files
-   - Includes them in your commit
+### Key Points
 
-2. **Deployment** - On Render/Railway:
-   - Build only installs Python packages (no generation needed)
-   - Uses the pre-generated client from the repo
-   - No Node.js required at runtime
+✅ Database schema managed by Prisma  
+✅ Migrations run locally with `prisma db push`  
+✅ SQLAlchemy models auto-generated from Prisma schema  
+✅ Pure Python deployment (no Node.js on Render)
 
-## Manual Generation
+## When Schema Changes
 
-If you need to generate manually:
+1. Edit `packages/db/prisma/schema.prisma`
+2. Run `npx prisma db push` (updates database)
+3. Pre-commit hook auto-generates SQLAlchemy models
+4. Commit schema + generated models
 
-```bash
-# From project root
-pnpm api:generate-prisma
+## Why SQLAlchemy?
 
-# Or from services/api directory
-python -m prisma generate --schema ../../packages/db/prisma/schema.prisma
-```
+**Problem**: Prisma Python requires Node.js for client generation, but Render's Python runtime doesn't include Node.js.
 
-## Current Configuration
+**Solution**: Use SQLAlchemy for queries (pure Python) while keeping Prisma for schema management.
 
-- **Pre-commit Hook:** Automatically generates Prisma client before commit
-- **Build:** Only installs Python packages (`pip install -r requirements.txt`)
-- **Start:** Runs the Python app directly (`python run.py`)
-- **No generation during deployment** - uses pre-generated client from repo
+## Migration Details
 
-## Troubleshooting
-
-### Hook not running?
-
-- Make sure Husky is installed: `pnpm install`
-- Check hook is executable: `ls -la .husky/pre-commit`
-
-### Generation fails?
-
-- Ensure Python is installed and in PATH
-- Ensure Node.js and pnpm are installed (needed for generation)
-- Check schema exists: `packages/db/prisma/schema.prisma`
-
-### Generated files not staged?
-
-- The hook tries to auto-stage, but you may need to manually:
-  ```bash
-  git add services/api/prisma/
-  git add services/api/.prisma/
-  ```
-
-## Alternative Solutions
-
-If automatic generation doesn't work:
-
-1. Generate manually before committing
-2. Use a CI/CD pipeline with Node.js to generate before deployment
-3. Switch to a pure Python ORM (SQLAlchemy, Tortoise ORM, etc.)
+For full migration details and usage examples, see **[DATABASE.md](./DATABASE.md)**.
