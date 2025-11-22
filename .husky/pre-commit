@@ -1,8 +1,8 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-# Generate Prisma Python client before commit
-node scripts/generate-prisma-client.js
+# Generate SQLAlchemy models from Prisma schema before commit
+# Ensures models are always in sync with schema.prisma
+node scripts/generate-db-models.js
 
 pnpm lint-staged
-
