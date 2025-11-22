@@ -76,8 +76,22 @@ function parseSchema(content) {
       const fieldType = fieldMatch[2];
       const attributes = fieldMatch[5] || '';
 
-      // Check if relation
-      if (/^[A-Z]/.test(fieldType.replace('[]', '').replace('?', ''))) {
+      // Check if relation (custom types, not Prisma primitives)
+      const baseType = fieldType.replace('[]', '').replace('?', '');
+      const isPrismaType = [
+        'String',
+        'Int',
+        'BigInt',
+        'Boolean',
+        'DateTime',
+        'Float',
+        'Decimal',
+        'Json',
+        'Bytes',
+      ].includes(baseType);
+      const isUnsupportedType = attributes.includes('Unsupported(');
+
+      if (!isPrismaType && !isUnsupportedType && /^[A-Z]/.test(baseType)) {
         relations.push({
           name: fieldName,
           type: fieldType,

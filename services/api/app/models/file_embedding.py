@@ -9,9 +9,9 @@ import uuid
 class FileEmbedding(Base):
     __tablename__ = "file_embeddings"
 
+    fileId = Column("file_id", UUID(as_uuid=True), primary_key=True)
 
     # Relationships
-    # fileId relationship defined in String model
     # kind relationship defined in FileEmbeddingKind model
     # embedding relationship defined in Unsupported model
     # embeddingImg relationship defined in Unsupported model

@@ -9,11 +9,11 @@ import uuid
 class LicenseKey(Base):
     __tablename__ = "license_keys"
 
+    key = Column("key", UUID(as_uuid=True), primary_key=True)
+    userId = Column("user_id", UUID(as_uuid=True), nullable=False)
+    createdAt = Column("created_at", DateTime(timezone=True), nullable=False)
+    revoked = Column("revoked", Boolean, nullable=False, default=False)
 
     # Relationships
-    # key relationship defined in String model
-    # userId relationship defined in String model
-    # createdAt relationship defined in DateTime model
-    # revoked relationship defined in Boolean model
     # user relationship defined in User model
 

@@ -9,17 +9,17 @@ import uuid
 class File(Base):
     __tablename__ = "files"
 
+    id = Column("id", UUID(as_uuid=True), primary_key=True)
+    uploadId = Column("upload_id", UUID(as_uuid=True))
+    fileName = Column("file_name", String, nullable=False)
+    mimeType = Column("mime_type", String, nullable=False)
+    sizeBytes = Column("size_bytes", BigInteger, nullable=False)
+    sha256 = Column("sha256", String, nullable=False)
+    phash = Column("phash", String)
+    textExcerpt = Column("text_excerpt", String)
+    createdAt = Column("created_at", DateTime(timezone=True), nullable=False)
 
     # Relationships
-    # id relationship defined in String model
-    # uploadId relationship defined in String model
-    # fileName relationship defined in String model
-    # mimeType relationship defined in String model
-    # sizeBytes relationship defined in BigInt model
-    # sha256 relationship defined in String model
-    # phash relationship defined in String model
-    # textExcerpt relationship defined in String model
-    # createdAt relationship defined in DateTime model
     # upload relationship defined in Upload model
     # embedding relationship defined in FileEmbedding model
     keptInGroup = relationship("DedupeGroup", back_populates="dedupeGroup")

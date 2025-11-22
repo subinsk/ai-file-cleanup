@@ -5,6 +5,9 @@ from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from app.core.config import settings
 
+# Import all models so they register with Base before engine is used
+from app.models import Base, User, LicenseKey, Upload, File, FileEmbedding, DedupeGroup
+
 logger = logging.getLogger(__name__)
 
 # Prepare database URL for asyncpg

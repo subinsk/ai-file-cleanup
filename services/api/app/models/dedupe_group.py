@@ -9,12 +9,12 @@ import uuid
 class DedupeGroup(Base):
     __tablename__ = "dedupe_groups"
 
+    id = Column("id", UUID(as_uuid=True), primary_key=True)
+    uploadId = Column("upload_id", UUID(as_uuid=True), nullable=False)
+    groupIndex = Column("group_index", Integer, nullable=False)
+    keptFileId = Column("kept_file_id", UUID(as_uuid=True))
 
     # Relationships
-    # id relationship defined in String model
-    # uploadId relationship defined in String model
-    # groupIndex relationship defined in Int model
-    # keptFileId relationship defined in String model
     # upload relationship defined in Upload model
     # keptFile relationship defined in File model
 

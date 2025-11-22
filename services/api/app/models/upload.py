@@ -9,12 +9,12 @@ import uuid
 class Upload(Base):
     __tablename__ = "uploads"
 
+    id = Column("id", UUID(as_uuid=True), primary_key=True)
+    userId = Column("user_id", UUID(as_uuid=True))
+    totalFiles = Column("total_files", Integer, nullable=False, default=0)
+    createdAt = Column("created_at", DateTime(timezone=True), nullable=False)
 
     # Relationships
-    # id relationship defined in String model
-    # userId relationship defined in String model
-    # totalFiles relationship defined in Int model
-    # createdAt relationship defined in DateTime model
     # user relationship defined in User model
     files = relationship("File", back_populates="file")
     dedupeGroups = relationship("DedupeGroup", back_populates="dedupeGroup")

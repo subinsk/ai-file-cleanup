@@ -9,14 +9,14 @@ import uuid
 class User(Base):
     __tablename__ = "users"
 
+    id = Column("id", UUID(as_uuid=True), primary_key=True)
+    email = Column("email", String, unique=True, nullable=False)
+    name = Column("name", String)
+    passwordHash = Column("password_hash", String, nullable=False)
+    createdAt = Column("created_at", DateTime(timezone=True), nullable=False)
+    updatedAt = Column("updated_at", DateTime(timezone=True), nullable=False)
 
     # Relationships
-    # id relationship defined in String model
-    # email relationship defined in String model
-    # name relationship defined in String model
-    # passwordHash relationship defined in String model
-    # createdAt relationship defined in DateTime model
-    # updatedAt relationship defined in DateTime model
     licenseKeys = relationship("LicenseKey", back_populates="licenseKey")
     uploads = relationship("Upload", back_populates="upload")
 
