@@ -1,26 +1,20 @@
-"""DedupeGroup model"""
-from sqlalchemy import Column, Integer, ForeignKey, Index, UniqueConstraint
+from app.models import Base
+from datetime import datetime
+from sqlalchemy import Column, String, Integer, BigInteger, Boolean, DateTime, ForeignKey, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import uuid
-
-from app.models import Base
 
 
 class DedupeGroup(Base):
     __tablename__ = "dedupe_groups"
 
-    id = Column("id", UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    upload_id = Column("upload_id", UUID(as_uuid=True), ForeignKey("uploads.id", ondelete="CASCADE"), nullable=False)
-    group_index = Column("group_index", Integer, nullable=False)
-    kept_file_id = Column("kept_file_id", UUID(as_uuid=True), ForeignKey("files.id", ondelete="SET NULL"), nullable=True)
 
     # Relationships
-    upload = relationship("Upload", back_populates="dedupe_groups")
-    kept_file = relationship("File", back_populates="kept_in_groups", foreign_keys=[kept_file_id])
+    # id relationship defined in String model
+    # uploadId relationship defined in String model
+    # groupIndex relationship defined in Int model
+    # keptFileId relationship defined in String model
+    # upload relationship defined in Upload model
+    # keptFile relationship defined in File model
 
-    # Constraints and Indexes
-    __table_args__ = (
-        UniqueConstraint('upload_id', 'group_index', name='dedupe_groups_upload_id_group_index_key'),
-        Index('dedupe_groups_upload_id_idx', 'upload_id'),
-    )
