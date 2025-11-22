@@ -1,10 +1,6 @@
 """SQLAlchemy models for database access"""
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from sqlalchemy.orm import declarative_base
-from app.core.config import settings
-
-# Base class for all models
-Base = declarative_base()
+# Import Base first
+from app.models.base import Base
 
 # Import all models (so they're registered with Base)
 from app.models.user import User

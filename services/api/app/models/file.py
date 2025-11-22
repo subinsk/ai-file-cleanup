@@ -1,4 +1,4 @@
-from app.models import Base
+from app.models.base import Base
 from datetime import datetime
 from sqlalchemy import Column, String, Integer, BigInteger, Boolean, DateTime, ForeignKey, Index
 from sqlalchemy.dialects.postgresql import UUID
