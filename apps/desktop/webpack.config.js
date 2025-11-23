@@ -44,7 +44,7 @@ module.exports = {
     new CopyWebpackPlugin({
       patterns: [
         {
-          from: '.env',
+          from: process.env.NODE_ENV === 'production' ? '.env.production' : '.env',
           to: '.env',
           noErrorOnMissing: true,
         },
