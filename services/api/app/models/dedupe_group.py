@@ -10,11 +10,11 @@ class DedupeGroup(Base):
     __tablename__ = "dedupe_groups"
 
     id = Column("id", UUID(as_uuid=True), primary_key=True)
-    uploadId = Column("upload_id", UUID(as_uuid=True), nullable=False)
+    uploadId = Column("upload_id", UUID(as_uuid=True), ForeignKey("uploads.id", ondelete="CASCADE"), nullable=False)
     groupIndex = Column("group_index", Integer, nullable=False)
-    keptFileId = Column("kept_file_id", UUID(as_uuid=True))
+    keptFileId = Column("kept_file_id", UUID(as_uuid=True), ForeignKey("files.id", ondelete="SET NULL"))
 
     # Relationships
-    # upload relationship defined in Upload model
-    # keptFile relationship defined in File model
+    upload = relationship("Upload", back_populates="dedupeGroups", uselist=False)
+    keptFile = relationship("File", back_populates="keptInGroup", uselist=False, foreign_keys=[keptFileId])
 

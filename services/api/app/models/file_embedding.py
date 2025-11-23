@@ -9,11 +9,11 @@ import uuid
 class FileEmbedding(Base):
     __tablename__ = "file_embeddings"
 
-    fileId = Column("file_id", UUID(as_uuid=True), primary_key=True)
+    fileId = Column("file_id", UUID(as_uuid=True), ForeignKey("files.id", ondelete="CASCADE"), primary_key=True)
 
     # Relationships
-    # kind relationship defined in FileEmbeddingKind model
-    # embedding relationship defined in Unsupported model
-    # embeddingImg relationship defined in Unsupported model
-    # file relationship defined in File model
+    kind = relationship("FileEmbeddingKind", back_populates="fileembeddings", uselist=False)
+    embedding = relationship("Unsupported", back_populates="fileembeddings", uselist=False)
+    embeddingImg = relationship("Unsupported", back_populates="fileembeddings", uselist=False)
+    file = relationship("File", back_populates="fileembeddings", uselist=False)
 

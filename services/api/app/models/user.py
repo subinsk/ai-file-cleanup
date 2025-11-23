@@ -17,6 +17,6 @@ class User(Base):
     updatedAt = Column("updated_at", DateTime(timezone=True), nullable=False)
 
     # Relationships
-    licenseKeys = relationship("LicenseKey", back_populates="licenseKey")
-    uploads = relationship("Upload", back_populates="upload")
+    licenseKeys = relationship("LicenseKey", back_populates="user")
+    uploads = relationship("Upload", back_populates="user")
 

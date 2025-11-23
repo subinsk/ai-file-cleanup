@@ -10,7 +10,7 @@ class File(Base):
     __tablename__ = "files"
 
     id = Column("id", UUID(as_uuid=True), primary_key=True)
-    uploadId = Column("upload_id", UUID(as_uuid=True))
+    uploadId = Column("upload_id", UUID(as_uuid=True), ForeignKey("uploads.id", ondelete="CASCADE"))
     fileName = Column("file_name", String, nullable=False)
     mimeType = Column("mime_type", String, nullable=False)
     sizeBytes = Column("size_bytes", BigInteger, nullable=False)
@@ -20,7 +20,7 @@ class File(Base):
     createdAt = Column("created_at", DateTime(timezone=True), nullable=False)
 
     # Relationships
-    # upload relationship defined in Upload model
-    # embedding relationship defined in FileEmbedding model
-    keptInGroup = relationship("DedupeGroup", back_populates="dedupeGroup")
+    upload = relationship("Upload", back_populates="files", uselist=False)
+    embedding = relationship("FileEmbedding", back_populates="files", uselist=False)
+    keptInGroup = relationship("DedupeGroup", back_populates="keptFile")
 

@@ -49,6 +49,7 @@ function parseSchema(content) {
 
     const fields = [];
     const relations = [];
+    const foreignKeys = new Map(); // fieldName -> { refTable, refColumn, onDelete, relationName }
     let tableName = modelName.toLowerCase() + 's';
 
     // Parse fields
@@ -92,11 +93,57 @@ function parseSchema(content) {
       const isUnsupportedType = attributes.includes('Unsupported(');
 
       if (!isPrismaType && !isUnsupportedType && /^[A-Z]/.test(baseType)) {
-        relations.push({
+        // Parse @relation attributes
+        const relationMatch = attributes.match(/@relation\s*\(([^)]+)\)/);
+        let relationInfo = {
           name: fieldName,
           type: fieldType,
           attributes,
-        });
+          relationName: null,
+          backPopulates: null,
+        };
+
+        if (relationMatch) {
+          const relationAttrs = relationMatch[1];
+          // Parse fields: [fieldName]
+          const fieldsMatch = relationAttrs.match(/fields:\s*\[(\w+)\]/);
+          // Parse references: [refField]
+          const refMatch = relationAttrs.match(/references:\s*\[(\w+)\]/);
+          // Parse relation name: "RelationName"
+          const nameMatch = relationAttrs.match(/"([^"]+)"/);
+          // Parse onDelete
+          const onDeleteMatch = relationAttrs.match(/onDelete:\s*(\w+)/);
+
+          if (fieldsMatch && refMatch) {
+            const fkField = fieldsMatch[1];
+            const refField = refMatch[1];
+            // Store reference info - will resolve table name in second pass
+            foreignKeys.set(fkField, {
+              refModelName: baseType,
+              refColumn: refField,
+              onDelete: onDeleteMatch ? onDeleteMatch[1] : null,
+              relationName: nameMatch ? nameMatch[1] : null,
+            });
+          }
+
+          if (nameMatch) {
+            relationInfo.relationName = nameMatch[1];
+          }
+        }
+
+        // Determine back_populates name
+        // If it's an array relation, the back_populates is the relation name (singular)
+        // If it's a single relation, find the corresponding array relation
+        if (fieldType.includes('[]')) {
+          // Array side: back_populates should be the field name on the other side
+          // We'll determine this when generating relationships
+          relationInfo.backPopulates = baseType.charAt(0).toLowerCase() + baseType.slice(1);
+        } else {
+          // Single side: back_populates should match the array relation name on the other side
+          relationInfo.backPopulates = null; // Will be set during relationship generation
+        }
+
+        relations.push(relationInfo);
         continue;
       }
 
@@ -137,7 +184,19 @@ function parseSchema(content) {
       tableName,
       fields,
       relations,
+      foreignKeys,
     });
+  }
+
+  // Second pass: resolve foreign key table names
+  for (const model of models) {
+    for (const [, fkInfo] of model.foreignKeys.entries()) {
+      const refModel = models.find((m) => m.name === fkInfo.refModelName);
+      if (refModel) {
+        fkInfo.refTable = refModel.tableName;
+        delete fkInfo.refModelName;
+      }
+    }
   }
 
   return { models, enums: enumTypes };
@@ -182,7 +241,7 @@ function mapType(field) {
 }
 
 // Generate Python model file
-function generateModel(model, enums) {
+function generateModel(model, enums, allModels) {
   const imports = new Set([
     'from sqlalchemy import Column, String, Integer, BigInteger, Boolean, DateTime, ForeignKey, Index',
     'from sqlalchemy.dialects.postgresql import UUID',
@@ -206,11 +265,24 @@ function generateModel(model, enums) {
   });
   if (hasEnum) {
     imports.add('from sqlalchemy import Enum as SQLEnum');
+    imports.add('import enum');
   }
 
   imports.add('from app.models.base import Base');
 
   let code = Array.from(imports).sort().join('\n') + '\n\n';
+
+  // Generate enum classes if needed (only once per enum type)
+  const generatedEnums = new Set();
+  for (const field of model.fields) {
+    const baseType = field.type.replace('?', '').replace('[]', '');
+    const enumType = enums.find((e) => e.name === baseType);
+    if (enumType && !generatedEnums.has(enumType.name)) {
+      generatedEnums.add(enumType.name);
+      const enumValues = enumType.values.map((v) => `    ${v.toUpperCase()} = "${v}"`).join('\n');
+      code += `class ${enumType.name}(str, enum.Enum):\n${enumValues}\n\n`;
+    }
+  }
 
   code += `\nclass ${model.name}(Base):\n`;
   code += `    __tablename__ = "${model.tableName}"\n\n`;
@@ -246,13 +318,27 @@ function generateModel(model, enums) {
       }
     }
 
+    // Check if this field has a foreign key
+    const fkInfo = model.foreignKeys.get(field.name);
+    let fkConstraint = '';
+    if (fkInfo && fkInfo.refTable) {
+      const onDeleteMap = {
+        Cascade: 'CASCADE',
+        SetNull: 'SET NULL',
+        Restrict: 'RESTRICT',
+      };
+      const onDeleteStr = fkInfo.onDelete
+        ? `, ondelete="${onDeleteMap[fkInfo.onDelete] || fkInfo.onDelete}"`
+        : '';
+      fkConstraint = `, ForeignKey("${fkInfo.refTable}.${fkInfo.refColumn}"${onDeleteStr})`;
+    }
+
     // Check if it's an enum
     const baseType = field.type.replace('?', '').replace('[]', '');
     const enumType = enums.find((e) => e.name === baseType);
     let columnType;
     if (enumType) {
-      const enumValues = enumType.values.map((v) => `"${v}"`).join(', ');
-      columnType = `SQLEnum(${enumValues}, name="${enumType.name
+      columnType = `SQLEnum(${enumType.name}, name="${enumType.name
         .toLowerCase()
         .replace(/([A-Z])/g, '_$1')
         .toLowerCase()}")`;
@@ -261,7 +347,7 @@ function generateModel(model, enums) {
     }
 
     const constraintStr = constraints.length > 0 ? ', ' + constraints.join(', ') : '';
-    code += `    ${field.name} = Column("${field.columnName}", ${columnType}${constraintStr})\n`;
+    code += `    ${field.name} = Column("${field.columnName}", ${columnType}${fkConstraint}${constraintStr})\n`;
   }
 
   // Generate relationships
@@ -270,11 +356,73 @@ function generateModel(model, enums) {
     for (const rel of model.relations) {
       const relType = rel.type.replace('[]', '').replace('?', '');
       const isArray = rel.type.includes('[]');
-      const relName = relType.charAt(0).toLowerCase() + relType.slice(1);
-      if (isArray) {
-        code += `    ${rel.name} = relationship("${relType}", back_populates="${relName}")\n`;
+
+      // Determine back_populates
+      let backPopulates;
+      if (rel.relationName) {
+        // Named relation: find the corresponding relation on the other side
+        const otherModel = allModels.find((m) => m.name === relType);
+        if (otherModel) {
+          const reverseRel = otherModel.relations.find((r) => r.relationName === rel.relationName);
+          if (reverseRel) {
+            backPopulates = reverseRel.name;
+          } else {
+            backPopulates = rel.name;
+          }
+        } else {
+          backPopulates = rel.name;
+        }
+      } else if (isArray) {
+        // Array side: back_populates is the singular field name on the other side
+        const otherModel = allModels.find((m) => m.name === relType);
+        if (otherModel) {
+          // Find the relation on the other side that points back to this model
+          const reverseRel = otherModel.relations.find(
+            (r) =>
+              r.type.replace('[]', '').replace('?', '') === model.name && !r.type.includes('[]')
+          );
+          if (reverseRel) {
+            backPopulates = reverseRel.name;
+          } else {
+            // Fallback: use lowercase model name
+            backPopulates = model.name.charAt(0).toLowerCase() + model.name.slice(1);
+          }
+        } else {
+          backPopulates = model.name.charAt(0).toLowerCase() + model.name.slice(1);
+        }
       } else {
-        code += `    # ${rel.name} relationship defined in ${relType} model\n`;
+        // Single side: back_populates is the array relation name on the other side
+        const otherModel = allModels.find((m) => m.name === relType);
+        if (otherModel) {
+          const reverseRel = otherModel.relations.find(
+            (r) => r.type.replace('[]', '').replace('?', '') === model.name && r.type.includes('[]')
+          );
+          if (reverseRel) {
+            backPopulates = reverseRel.name;
+          } else {
+            // Fallback: pluralize the model name
+            backPopulates = model.name.toLowerCase() + 's';
+          }
+        } else {
+          backPopulates = model.name.toLowerCase() + 's';
+        }
+      }
+
+      if (isArray) {
+        code += `    ${rel.name} = relationship("${relType}", back_populates="${backPopulates}")\n`;
+      } else {
+        // Single relationship: check if we need uselist=False or foreign_keys
+        let relParams = [`back_populates="${backPopulates}"`, 'uselist=False'];
+        if (rel.relationName) {
+          // For named relations, might need foreign_keys
+          const fkField = Array.from(model.foreignKeys.keys()).find(
+            (fk) => model.foreignKeys.get(fk)?.relationName === rel.relationName
+          );
+          if (fkField) {
+            relParams.push(`foreign_keys=[${fkField}]`);
+          }
+        }
+        code += `    ${rel.name} = relationship("${relType}", ${relParams.join(', ')})\n`;
       }
     }
   }
@@ -343,7 +491,7 @@ for (const model of models) {
       return offset > 0 ? '_' + p1.toLowerCase() : p1.toLowerCase();
     }) + '.py';
 
-  const modelCode = generateModel(model, enums);
+  const modelCode = generateModel(model, enums, models);
   fs.writeFileSync(path.join(modelsDir, fileName), modelCode);
   console.log(`✅ Generated ${fileName}`);
 }
