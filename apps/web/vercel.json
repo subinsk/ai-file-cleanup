@@ -1,4 +1,5 @@
 {
-  "buildCommand": "cd ../.. && pnpm install --filter=@ai-cleanup/web... --ignore-scripts && cd packages/db && npx prisma generate --generator client && cd ../../apps/web && pnpm build",
+  "installCommand": "cd ../.. && pnpm install --filter=@ai-cleanup/web...",
+  "buildCommand": "cd ../../packages/db && npx prisma generate --generator client && cd ../../apps/web && pnpm build",
   "outputDirectory": ".next"
 }

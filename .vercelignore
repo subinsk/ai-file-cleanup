@@ -20,3 +20,5 @@ Dockerfile*
 *.bat
 nginx.conf
 package-lock.json
+services/api
+services/ml-service
