@@ -18,6 +18,15 @@
 # Desktop app
 /apps/desktop
 
+# Large installer files (deployed separately)
+/apps/web/public/downloads/*.exe
+/apps/web/public/downloads/*.msi
+/apps/web/public/downloads/*.zip
+/apps/web/public/downloads/*.dmg
+/apps/web/public/downloads/*.deb
+/apps/web/public/downloads/*.rpm
+/apps/web/public/downloads/*.AppImage
+
 # Development files
 .env.local
 .env*.local
@@ -36,11 +45,10 @@ venv
 backend
 
 # Build artifacts (will be rebuilt)
-dist
+/apps/desktop/dist
+/packages/*/dist
 .turbo
-.next
 out
-build
 *.tsbuildinfo
 
 # Lock files (pnpm-lock.yaml is kept)
