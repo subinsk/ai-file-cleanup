@@ -19,10 +19,11 @@ export const authOptions: AuthOptions = {
         }
 
         try {
-          // Log API URL for debugging (only in development)
-          if (process.env.NODE_ENV === 'development') {
-            console.log(`[NextAuth] Using API URL: ${API_URL}`);
-          }
+          // Log API URL for debugging
+          console.log(`[NextAuth] Using API URL: ${API_URL}`);
+          console.log(`[NextAuth] NODE_ENV: ${process.env.NODE_ENV}`);
+          console.log(`[NextAuth] API_URL env: ${process.env.API_URL}`);
+          console.log(`[NextAuth] NEXT_PUBLIC_API_URL env: ${process.env.NEXT_PUBLIC_API_URL}`);
 
           // Call your Python API with timeout
           const controller = new AbortController();
@@ -77,20 +78,31 @@ export const authOptions: AuthOptions = {
   },
   callbacks: {
     async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-        token.email = user.email;
-        token.name = user.name;
+      try {
+        if (user) {
+          token.id = user.id;
+          token.email = user.email;
+          token.name = user.name;
+        }
+        return token;
+      } catch (error) {
+        console.error('[NextAuth] JWT callback error:', error);
+        return token;
       }
-      return token;
     },
     async session({ session, token }) {
-      if (token && session.user) {
-        session.user.id = token.id as string;
-        session.user.email = token.email as string;
-        session.user.name = token.name as string;
+      try {
+        if (token && session.user) {
+          session.user.id = token.id as string;
+          session.user.email = token.email as string;
+          session.user.name = token.name as string;
+        }
+        return session;
+      } catch (error) {
+        console.error('[NextAuth] Session callback error:', error);
+        // Return session even if token is missing to prevent 500 error
+        return session;
       }
-      return session;
     },
   },
   session: {
@@ -98,4 +110,16 @@ export const authOptions: AuthOptions = {
     maxAge: 7 * 24 * 60 * 60, // 7 days
   },
   secret: process.env.NEXTAUTH_SECRET,
+  debug: process.env.NODE_ENV === 'development',
 };
+
+// Validate required environment variables
+if (!process.env.NEXTAUTH_SECRET && process.env.NODE_ENV === 'production') {
+  console.warn('[NextAuth] WARNING: NEXTAUTH_SECRET is not set. NextAuth will not work properly.');
+}
+
+if (!API_URL || API_URL.includes('localhost')) {
+  console.warn(
+    `[NextAuth] WARNING: API_URL is set to ${API_URL}. This may not work in production.`
+  );
+}
