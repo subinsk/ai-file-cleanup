@@ -9,7 +9,7 @@ import uuid
 class File(Base):
     __tablename__ = "files"
 
-    id = Column("id", UUID(as_uuid=True), primary_key=True)
+    id = Column("id", UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     uploadId = Column("upload_id", UUID(as_uuid=True), ForeignKey("uploads.id", ondelete="CASCADE"))
     fileName = Column("file_name", String, nullable=False)
     mimeType = Column("mime_type", String, nullable=False)
@@ -17,7 +17,7 @@ class File(Base):
     sha256 = Column("sha256", String, nullable=False)
     phash = Column("phash", String)
     textExcerpt = Column("text_excerpt", String)
-    createdAt = Column("created_at", DateTime(timezone=True), nullable=False)
+    createdAt = Column("created_at", DateTime(timezone=True), nullable=False, default=datetime.utcnow)
 
     # Relationships
     upload = relationship("Upload", back_populates="files", uselist=False)

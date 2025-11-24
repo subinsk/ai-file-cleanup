@@ -9,10 +9,10 @@ import uuid
 class Upload(Base):
     __tablename__ = "uploads"
 
-    id = Column("id", UUID(as_uuid=True), primary_key=True)
+    id = Column("id", UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     userId = Column("user_id", UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"))
     totalFiles = Column("total_files", Integer, nullable=False, default=0)
-    createdAt = Column("created_at", DateTime(timezone=True), nullable=False)
+    createdAt = Column("created_at", DateTime(timezone=True), nullable=False, default=datetime.utcnow)
 
     # Relationships
     user = relationship("User", back_populates="uploads", uselist=False)

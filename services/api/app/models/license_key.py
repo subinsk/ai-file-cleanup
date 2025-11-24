@@ -9,9 +9,9 @@ import uuid
 class LicenseKey(Base):
     __tablename__ = "license_keys"
 
-    key = Column("key", UUID(as_uuid=True), primary_key=True)
+    key = Column("key", UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     userId = Column("user_id", UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    createdAt = Column("created_at", DateTime(timezone=True), nullable=False)
+    createdAt = Column("created_at", DateTime(timezone=True), nullable=False, default=datetime.utcnow)
     revoked = Column("revoked", Boolean, nullable=False, default=False)
 
     # Relationships
