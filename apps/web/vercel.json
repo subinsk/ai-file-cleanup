@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd ../.. && pnpm --filter=@ai-cleanup/db db:generate && pnpm build:packages && cd apps/web && pnpm build",
+  "buildCommand": "cd ../.. && cd packages/db && npx prisma generate --generator client && cd ../.. && pnpm build:packages && cd apps/web && pnpm build",
   "installCommand": "cd ../.. && pnpm install --filter=@ai-cleanup/web... --frozen-lockfile --ignore-scripts",
   "outputDirectory": ".next",
   "framework": "nextjs"
