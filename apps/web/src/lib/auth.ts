@@ -1,7 +1,8 @@
 import { AuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Use server-side env var (API_URL) or fallback to NEXT_PUBLIC_API_URL for client compatibility
+const API_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export const authOptions: AuthOptions = {
   providers: [
@@ -13,11 +14,20 @@ export const authOptions: AuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
+          console.error('[NextAuth] Missing credentials');
           return null;
         }
 
         try {
-          // Call your Python API
+          // Log API URL for debugging (only in development)
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`[NextAuth] Using API URL: ${API_URL}`);
+          }
+
+          // Call your Python API with timeout
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
           const response = await fetch(`${API_URL}/auth/login`, {
             method: 'POST',
             headers: {
@@ -27,9 +37,14 @@ export const authOptions: AuthOptions = {
               email: credentials.email,
               password: credentials.password,
             }),
+            signal: controller.signal,
           });
 
+          clearTimeout(timeoutId);
+
           if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`[NextAuth] Login failed: ${response.status} - ${errorText}`);
             return null;
           }
 
@@ -43,9 +58,14 @@ export const authOptions: AuthOptions = {
             };
           }
 
+          console.error('[NextAuth] No user data in response:', data);
           return null;
         } catch (error) {
-          console.error('Auth error:', error);
+          if (error instanceof Error && error.name === 'AbortError') {
+            console.error('[NextAuth] Request timeout - API may be unreachable from server');
+          } else {
+            console.error('[NextAuth] Auth error:', error);
+          }
           return null;
         }
       },
@@ -53,6 +73,7 @@ export const authOptions: AuthOptions = {
   ],
   pages: {
     signIn: '/login',
+    error: '/login', // Redirect errors to login page instead of default error page
   },
   callbacks: {
     async jwt({ token, user }) {

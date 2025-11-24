@@ -128,19 +128,36 @@ export default function RegisterPage() {
       }
 
       // Auto-login with NextAuth
-      const result = await signIn('credentials', {
-        email,
-        password,
-        redirect: false,
-      });
+      try {
+        const result = await signIn('credentials', {
+          email,
+          password,
+          redirect: false,
+        });
 
-      if (result?.error) {
-        setError('Account created but auto-login failed. Please log in manually.');
-        setTimeout(() => router.push('/login'), 2000);
-      } else {
-        // Redirect to home
-        router.push('/');
-        router.refresh();
+        if (result?.error) {
+          console.error('NextAuth signIn error:', result.error);
+          // Account created and API login successful, but NextAuth failed
+          // Still redirect to home - user can use the API cookie for auth
+          setError('Account created successfully. Redirecting...');
+          setTimeout(() => {
+            router.push('/');
+            router.refresh();
+          }, 1000);
+        } else {
+          // Success - redirect to home
+          router.push('/');
+          router.refresh();
+        }
+      } catch (nextAuthError) {
+        console.error('NextAuth signIn exception:', nextAuthError);
+        // Account created and API login successful, but NextAuth threw exception
+        // Still redirect - API cookie should work for protected routes
+        setError('Account created successfully. Redirecting...');
+        setTimeout(() => {
+          router.push('/');
+          router.refresh();
+        }, 1000);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed. Please try again.');
