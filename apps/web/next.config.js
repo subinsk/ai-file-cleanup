@@ -3,7 +3,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  output: 'standalone',
+  // Standalone output disabled temporarily due to trace collection issues in monorepo
+  // output: 'standalone',
   transpilePackages: ['@ai-cleanup/types', '@ai-cleanup/ui'],
 
   images: {
@@ -14,6 +15,9 @@ const nextConfig = {
   compress: true,
 
   poweredByHeader: false,
+
+  // Disable output file tracing to prevent stack overflow in monorepo builds
+  outputFileTracing: false,
 
   async headers() {
     return [
@@ -78,14 +82,6 @@ const nextConfig = {
   experimental: {
     largePageDataBytes: 128 * 100000,
   },
-
-  outputFileTracingIgnores: [
-    '**/.git/**',
-    '**/node_modules/**',
-    '**/test_files/**',
-    '**/demo_dataset/**',
-    '**/services/**',
-  ],
 };
 
 module.exports = nextConfig;
