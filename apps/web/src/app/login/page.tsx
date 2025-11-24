@@ -81,9 +81,19 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        setError('Invalid email or password');
+        console.error('NextAuth signIn error:', result.error);
+        setError(
+          result.error === 'CredentialsSignin'
+            ? 'Invalid email or password'
+            : 'Authentication failed'
+        );
+      } else if (result?.ok) {
+        // Success - redirect to the page they were trying to access or home
+        router.push(from);
+        router.refresh();
       } else {
-        // Redirect to the page they were trying to access or home
+        // Unknown result - still try to redirect
+        console.warn('NextAuth signIn returned unexpected result:', result);
         router.push(from);
         router.refresh();
       }

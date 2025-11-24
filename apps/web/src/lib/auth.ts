@@ -1,8 +1,9 @@
 import { AuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 
-// Use server-side env var (API_URL) or fallback to NEXT_PUBLIC_API_URL for client compatibility
-const API_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Use NEXT_PUBLIC_API_URL (available on both client and server in Next.js)
+// Fallback to localhost for local development
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export const authOptions: AuthOptions = {
   providers: [
@@ -20,10 +21,8 @@ export const authOptions: AuthOptions = {
 
         try {
           // Log API URL for debugging
-          console.log(`[NextAuth] Using API URL: ${API_URL}`);
-          console.log(`[NextAuth] NODE_ENV: ${process.env.NODE_ENV}`);
-          console.log(`[NextAuth] API_URL env: ${process.env.API_URL}`);
-          console.log(`[NextAuth] NEXT_PUBLIC_API_URL env: ${process.env.NEXT_PUBLIC_API_URL}`);
+          // eslint-disable-next-line no-console
+          console.log(`[NextAuth] Using API URL: ${API_URL} (NODE_ENV: ${process.env.NODE_ENV})`);
 
           // Call your Python API with timeout
           const controller = new AbortController();
@@ -52,11 +51,20 @@ export const authOptions: AuthOptions = {
           const data = await response.json();
 
           if (data.user) {
-            return {
-              id: data.user.id,
-              email: data.user.email,
-              name: data.user.name,
+            // Ensure all required fields are present
+            const user = {
+              id: String(data.user.id || ''),
+              email: String(data.user.email || ''),
+              name: data.user.name || null,
             };
+
+            // Validate required fields
+            if (!user.id || !user.email) {
+              console.error('[NextAuth] Missing required user fields:', user);
+              return null;
+            }
+
+            return user;
           }
 
           console.error('[NextAuth] No user data in response:', data);
@@ -79,29 +87,81 @@ export const authOptions: AuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       try {
-        if (user) {
-          token.id = user.id;
-          token.email = user.email;
-          token.name = user.name;
+        // Ensure token exists
+        if (!token) {
+          console.error('[NextAuth] JWT callback: token is missing');
+          return { id: '', email: '', name: null } as typeof token;
         }
+
+        if (user) {
+          // Persist user data to token on sign in
+          token.id = String(user.id || '');
+          token.email = String(user.email || '');
+          token.name = user.name || null;
+        }
+
+        // Ensure token always has required fields
+        if (!token.id && !token.email) {
+          console.warn('[NextAuth] JWT callback: token missing id and email');
+        }
+
+        // Always return token, even if user is undefined (subsequent calls)
         return token;
       } catch (error) {
         console.error('[NextAuth] JWT callback error:', error);
-        return token;
+        // Return empty token object if error occurs
+        return (token || { id: '', email: '', name: null }) as typeof token;
       }
     },
     async session({ session, token }) {
       try {
-        if (token && session.user) {
-          session.user.id = token.id as string;
-          session.user.email = token.email as string;
-          session.user.name = token.name as string;
+        // Always ensure session exists
+        if (!session) {
+          console.error('[NextAuth] Session callback: session is missing');
+          return {
+            user: { id: '', email: '', name: null },
+            expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          };
         }
+
+        // Always ensure session.user exists
+        if (!session.user) {
+          console.error('[NextAuth] Session callback: session.user is missing');
+          session.user = { id: '', email: '', name: null };
+        }
+
+        // If token exists and has data, populate session from token
+        if (token) {
+          if (token.id) {
+            session.user.id = String(token.id);
+          }
+          if (token.email) {
+            session.user.email = String(token.email);
+          }
+          if (token.name !== undefined) {
+            session.user.name = token.name as string | null;
+          }
+        } else {
+          // eslint-disable-next-line no-console
+          console.warn('[NextAuth] Session callback: token is missing');
+          // If token is missing but session exists, ensure user has at least empty values
+          if (!session.user.id) session.user.id = '';
+          if (!session.user.email) session.user.email = '';
+        }
+
+        // Ensure session has expires field
+        if (!session.expires) {
+          session.expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+        }
+
         return session;
       } catch (error) {
         console.error('[NextAuth] Session callback error:', error);
-        // Return session even if token is missing to prevent 500 error
-        return session;
+        // Always return a valid session object to prevent 500 error
+        return {
+          user: { id: '', email: '', name: null },
+          expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        };
       }
     },
   },

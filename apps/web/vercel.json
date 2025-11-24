@@ -1,5 +1,6 @@
 {
-  "buildCommand": "cd ../.. && pnpm turbo build --filter=@ai-cleanup/web...",
-  "installCommand": "cd ../.. && pnpm vercel:install",
-  "outputDirectory": ".next"
+  "buildCommand": "cd ../.. && pnpm build:packages && cd apps/web && pnpm build",
+  "installCommand": "cd ../.. && pnpm install --filter=@ai-cleanup/web... --frozen-lockfile",
+  "outputDirectory": ".next",
+  "framework": "nextjs"
 }
