@@ -1,24 +1,48 @@
-backend
-venv
-__pycache__
-*.pyc
-.env
-.DS_Store
-node_modules
-.git
-.gitignore
-diagrams
-monitoring
-test_files
-comprehensive_test.py
-test_system.py
-verify_setup.py
-docker-compose*.yml
-Dockerfile*
+# Python services (not needed for web deployment)
+/services/api
+/services/ml-service
+
+# Test files and demo data
+/test_files
+/demo_dataset
+
+# Documentation and scripts
+/packages/docs
+/diagrams
 *.md
+!README.md
 *.sh
 *.bat
+*.ps1
+
+# Desktop app
+/apps/desktop
+
+# Development files
+.env.local
+.env*.local
+*.log
+.DS_Store
+
+# Docker and infrastructure
+docker-compose*.yml
+Dockerfile*
 nginx.conf
+
+# Python artifacts
+__pycache__
+*.pyc
+venv
+backend
+
+# Build artifacts (will be rebuilt)
+dist
+.turbo
+.next
+out
+build
+*.tsbuildinfo
+
+# Lock files (pnpm-lock.yaml is kept)
 package-lock.json
-services/api
-services/ml-service
+yarn.lock

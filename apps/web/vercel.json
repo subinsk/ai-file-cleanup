@@ -1,5 +1,6 @@
 {
-  "installCommand": "cd ../.. && pnpm install --filter=@ai-cleanup/web...",
-  "buildCommand": "cd ../../packages/db && npx prisma generate --generator client && cd ../types && pnpm build && cd ../ui && pnpm build && cd ../../apps/web && pnpm build",
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "pnpm install --ignore-scripts",
+  "buildCommand": "cd ../.. && pnpm db:generate && turbo run build --filter=@ai-cleanup/web",
   "outputDirectory": ".next"
 }
