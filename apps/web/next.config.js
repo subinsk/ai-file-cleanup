@@ -28,17 +28,6 @@ const nextConfig = {
   },
   experimental: {
     largePageDataBytes: 128 * 100000,
-    outputFileTracingIgnores: [
-      '**/.git/**',
-      '**/backend/**',
-      '**/venv/**',
-      '**/__pycache__/**',
-      '**/test_files/**',
-      '**/monitoring/**',
-      '**/diagrams/**',
-      '**/playwright-report/**',
-      '**/test-results/**',
-    ],
   },
 };
 
