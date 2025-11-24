@@ -52,6 +52,9 @@ function parseSchema(content) {
     const foreignKeys = new Map(); // fieldName -> { refTable, refColumn, onDelete, relationName }
     let tableName = modelName.toLowerCase() + 's';
 
+    // Create a set of enum names for quick lookup
+    const enumNames = new Set(enumTypes.map((e) => e.name));
+
     // Parse fields
     const lines = body
       .split('\n')
@@ -69,16 +72,31 @@ function parseSchema(content) {
       // Skip @@index, @@unique
       if (line.startsWith('@@')) continue;
 
-      // Parse field
-      const fieldMatch = line.match(/^(\w+)\s+(\w+(\[\])?(\?)?)\s*(.*)?$/);
+      // Parse field - handle types like: String, FileEmbeddingKind, Unsupported("vector(768)")?
+      // Match: fieldName Type[]? @attributes
+      // First try to match Unsupported("...") pattern, then fall back to simple type
+      let fieldMatch = line.match(/^(\w+)\s+(Unsupported\("[^"]+"\)(\[\])?(\?)?)\s*(.*)?$/);
+      if (!fieldMatch) {
+        // Fall back to simple type pattern
+        fieldMatch = line.match(/^(\w+)\s+([A-Z]\w*(\[\])?(\?)?)\s*(.*)?$/);
+      }
       if (!fieldMatch) continue;
 
       const fieldName = fieldMatch[1];
-      const fieldType = fieldMatch[2];
-      const attributes = fieldMatch[5] || '';
+      const fullType = fieldMatch[2]; // e.g., "Unsupported("vector(768)")?" or "FileEmbeddingKind"
+      const attributes = fieldMatch[5] || fieldMatch[6] || '';
+
+      // Check if it's an Unsupported type
+      const unsupportedMatch = fullType.match(/Unsupported\("([^"]+)"\)/);
+      const isUnsupportedType = !!unsupportedMatch;
+
+      // Extract base type (remove array brackets, optional marker, and function call params)
+      let baseType = fullType
+        .replace(/\([^)]*\)/g, '')
+        .replace('[]', '')
+        .replace('?', '');
 
       // Check if relation (custom types, not Prisma primitives)
-      const baseType = fieldType.replace('[]', '').replace('?', '');
       const isPrismaType = [
         'String',
         'Int',
@@ -90,14 +108,32 @@ function parseSchema(content) {
         'Json',
         'Bytes',
       ].includes(baseType);
-      const isUnsupportedType = attributes.includes('Unsupported(');
 
-      if (!isPrismaType && !isUnsupportedType && /^[A-Z]/.test(baseType)) {
+      // Check if it's an enum type
+      const isEnumType = enumNames.has(baseType);
+
+      // Check if it's an array type (always a relation in Prisma)
+      const isArrayType = fullType.includes('[]');
+
+      // Check if it's an optional single relation (could be implicit relation)
+      const isOptionalSingle = fullType.includes('?') && !fullType.includes('[]');
+
+      // Only treat as relation if it's not a Prisma type, not Unsupported, not an enum, and starts with capital
+      // Relations can have @relation attribute, be array types (many side), or be optional single types (implicit one-to-one)
+      const hasRelationAttr = attributes.includes('@relation');
+
+      if (
+        !isPrismaType &&
+        !isUnsupportedType &&
+        !isEnumType &&
+        /^[A-Z]/.test(baseType) &&
+        (hasRelationAttr || isArrayType || isOptionalSingle)
+      ) {
         // Parse @relation attributes
         const relationMatch = attributes.match(/@relation\s*\(([^)]+)\)/);
         let relationInfo = {
           name: fieldName,
-          type: fieldType,
+          type: fullType,
           attributes,
           relationName: null,
           backPopulates: null,
@@ -134,7 +170,7 @@ function parseSchema(content) {
         // Determine back_populates name
         // If it's an array relation, the back_populates is the relation name (singular)
         // If it's a single relation, find the corresponding array relation
-        if (fieldType.includes('[]')) {
+        if (fullType.includes('[]')) {
           // Array side: back_populates should be the field name on the other side
           // We'll determine this when generating relationships
           relationInfo.backPopulates = baseType.charAt(0).toLowerCase() + baseType.slice(1);
@@ -150,14 +186,15 @@ function parseSchema(content) {
       // Parse field attributes
       const field = {
         name: fieldName,
-        type: fieldType,
+        type: fullType,
         isPrimary: attributes.includes('@id'),
         isUnique: attributes.includes('@unique'),
-        isOptional: fieldType.includes('?'),
-        isArray: fieldType.includes('[]'),
+        isOptional: fullType.includes('?'),
+        isArray: fullType.includes('[]'),
         defaultValue: null,
         dbType: null,
         columnName: fieldName,
+        unsupportedType: unsupportedMatch ? unsupportedMatch[1] : null,
       };
 
       // Parse @map
@@ -172,10 +209,7 @@ function parseSchema(content) {
       const dbMatch = attributes.match(/@db\.(\w+(\([^)]*\))?)/);
       if (dbMatch) field.dbType = dbMatch[1];
 
-      // Parse Unsupported type
-      const unsupportedMatch = attributes.match(/Unsupported\("([^"]+)"\)/);
-      if (unsupportedMatch) field.unsupportedType = unsupportedMatch[1];
-
+      // unsupportedType already set above when creating field object
       fields.push(field);
     }
 
@@ -204,7 +238,11 @@ function parseSchema(content) {
 
 // Map Prisma types to SQLAlchemy types
 function mapType(field) {
-  const baseType = field.type.replace('?', '').replace('[]', '');
+  // Remove function calls, array brackets, and optional markers
+  const baseType = field.type
+    .replace(/\([^)]*\)/g, '')
+    .replace('[]', '')
+    .replace('?', '');
 
   // Handle Unsupported (pgvector)
   if (field.unsupportedType) {
@@ -338,10 +376,12 @@ function generateModel(model, enums, allModels) {
     const enumType = enums.find((e) => e.name === baseType);
     let columnType;
     if (enumType) {
-      columnType = `SQLEnum(${enumType.name}, name="${enumType.name
-        .toLowerCase()
+      // Convert camelCase to snake_case for enum name
+      const enumName = enumType.name
         .replace(/([A-Z])/g, '_$1')
-        .toLowerCase()}")`;
+        .toLowerCase()
+        .replace(/^_/, ''); // Remove leading underscore if any
+      columnType = `SQLEnum(${enumType.name}, name="${enumName}")`;
     } else {
       columnType = sqlType;
     }
@@ -391,20 +431,53 @@ function generateModel(model, enums, allModels) {
           backPopulates = model.name.charAt(0).toLowerCase() + model.name.slice(1);
         }
       } else {
-        // Single side: back_populates is the array relation name on the other side
+        // Single side: could be one-to-one or many-to-one
+        // First check for one-to-one (single relationship pointing back)
         const otherModel = allModels.find((m) => m.name === relType);
         if (otherModel) {
-          const reverseRel = otherModel.relations.find(
-            (r) => r.type.replace('[]', '').replace('?', '') === model.name && r.type.includes('[]')
-          );
+          // Look for a single relationship on the other side that points back to this model
+          const reverseRel = otherModel.relations.find((r) => {
+            const rBaseType = r.type
+              .replace(/\([^)]*\)/g, '')
+              .replace('[]', '')
+              .replace('?', '');
+            return rBaseType === model.name && !r.type.includes('[]');
+          });
           if (reverseRel) {
+            // One-to-one relationship
             backPopulates = reverseRel.name;
           } else {
-            // Fallback: pluralize the model name
-            backPopulates = model.name.toLowerCase() + 's';
+            // Check for array relationship (one-to-many)
+            const arrayRel = otherModel.relations.find((r) => {
+              const rBaseType = r.type
+                .replace(/\([^)]*\)/g, '')
+                .replace('[]', '')
+                .replace('?', '');
+              return rBaseType === model.name && r.type.includes('[]');
+            });
+            if (arrayRel) {
+              backPopulates = arrayRel.name;
+            } else {
+              // Check if there's a field (not relation) on the other model with this type
+              // This handles implicit relations in Prisma (one side has @relation, other doesn't)
+              const implicitField = otherModel.fields.find((f) => {
+                const fBaseType = f.type
+                  .replace(/\([^)]*\)/g, '')
+                  .replace('[]', '')
+                  .replace('?', '');
+                return fBaseType === model.name && !f.type.includes('[]');
+              });
+              if (implicitField) {
+                backPopulates = implicitField.name;
+              } else {
+                // Fallback: use lowercase model name (for one-to-one)
+                backPopulates = model.name.charAt(0).toLowerCase() + model.name.slice(1);
+              }
+            }
           }
         } else {
-          backPopulates = model.name.toLowerCase() + 's';
+          // Fallback: use lowercase model name
+          backPopulates = model.name.charAt(0).toLowerCase() + model.name.slice(1);
         }
       }
 

@@ -145,7 +145,7 @@ class EmbeddingCacheService:
                     if file:
                         # Get embedding for this file
                         emb_result = await session.execute(
-                            select(FileEmbedding).where(FileEmbedding.file_id == file.id)
+                            select(FileEmbedding).where(FileEmbedding.fileId == file.id)
                         )
                         embedding_record = emb_result.scalar_one_or_none()
                         
@@ -186,11 +186,11 @@ class EmbeddingCacheService:
                     if file:
                         # Get embedding for this file
                         emb_result = await session.execute(
-                            select(FileEmbedding).where(FileEmbedding.file_id == file.id)
+                            select(FileEmbedding).where(FileEmbedding.fileId == file.id)
                         )
                         embedding_record = emb_result.scalar_one_or_none()
                         
-                        if embedding_record and embedding_record.embedding_img:
+                        if embedding_record and embedding_record.embeddingImg:
                             # pgvector returns list directly
                             embedding_list = embedding_record.embedding_img
                             _embedding_cache['image'][sha256] = embedding_list

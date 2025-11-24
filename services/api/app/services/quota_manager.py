@@ -41,7 +41,7 @@ class QuotaManager:
                 # Get user's total file size
                 result = await session.execute(
                     select(Upload)
-                    .where(Upload.user_id == user_uuid)
+                    .where(Upload.userId == user_uuid)
                     .options(selectinload(Upload.files))
                 )
                 user_uploads = result.scalars().all()
@@ -49,7 +49,7 @@ class QuotaManager:
                 total_size = 0
                 for upload in user_uploads:
                     for file in upload.files:
-                        total_size += file.size_bytes or 0
+                        total_size += file.sizeBytes or 0
                 
                 # Check if adding new data would exceed quota
                 max_bytes = settings.MAX_STORAGE_PER_USER_MB * 1024 * 1024
@@ -85,7 +85,7 @@ class QuotaManager:
             async with AsyncSessionLocal() as session:
                 # Count user's uploads
                 result = await session.execute(
-                    select(func.count()).select_from(Upload).where(Upload.user_id == user_uuid)
+                    select(func.count()).select_from(Upload).where(Upload.userId == user_uuid)
                 )
                 upload_count = result.scalar() or 0
                 
@@ -122,7 +122,7 @@ class QuotaManager:
                 # Get user's uploads and files
                 result = await session.execute(
                     select(Upload)
-                    .where(Upload.user_id == user_uuid)
+                    .where(Upload.userId == user_uuid)
                     .options(selectinload(Upload.files))
                 )
                 user_uploads = result.scalars().all()
@@ -131,7 +131,7 @@ class QuotaManager:
                 total_files = 0
                 for upload in user_uploads:
                     for file in upload.files:
-                        total_size += file.size_bytes or 0
+                        total_size += file.sizeBytes or 0
                         total_files += 1
                 
                 max_storage_bytes = settings.MAX_STORAGE_PER_USER_MB * 1024 * 1024

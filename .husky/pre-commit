@@ -1,11 +1,4 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-# Generate SQLAlchemy models from Prisma schema before commit
-# Ensures models are always in sync with schema.prisma
-node scripts/generate-db-models.js
-
-# Stage the generated model files to avoid conflicts with lint-staged
-git add services/api/app/models/*.py 2>/dev/null || true
-
 pnpm lint-staged

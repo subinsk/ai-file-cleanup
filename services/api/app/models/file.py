@@ -21,6 +21,6 @@ class File(Base):
 
     # Relationships
     upload = relationship("Upload", back_populates="files", uselist=False)
-    embedding = relationship("FileEmbedding", back_populates="files", uselist=False)
+    embedding = relationship("FileEmbedding", back_populates="file", uselist=False)
     keptInGroup = relationship("DedupeGroup", back_populates="keptFile")
 

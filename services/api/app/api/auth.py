@@ -74,7 +74,7 @@ async def register(request: RegisterRequest, session: AsyncSession = Depends(get
         # Create user
         user = User(
             email=request.email,
-            password_hash=password_hash,
+            passwordHash=password_hash,
             name=request.name,
         )
         session.add(user)
@@ -86,7 +86,7 @@ async def register(request: RegisterRequest, session: AsyncSession = Depends(get
             id=str(user.id),
             email=user.email,
             name=user.name,
-            created_at=user.created_at.isoformat(),
+            created_at=user.createdAt.isoformat(),
         )
         
     except HTTPException:
@@ -108,7 +108,7 @@ async def login(request: LoginRequest, response: Response, session: AsyncSession
             raise HTTPException(status_code=401, detail="Invalid credentials")
         
         # Verify password
-        if not verify_password(request.password, user.password_hash):
+        if not verify_password(request.password, user.passwordHash):
             raise HTTPException(status_code=401, detail="Invalid credentials")
         
         # Create access token
@@ -137,7 +137,7 @@ async def login(request: LoginRequest, response: Response, session: AsyncSession
                 id=str(user.id),
                 email=user.email,
                 name=user.name,
-                created_at=user.created_at.isoformat(),
+                created_at=user.createdAt.isoformat(),
             )
         }
         
@@ -162,5 +162,5 @@ async def get_current_user_info(user: User = Depends(get_current_user)):
         id=str(user.id),
         email=user.email,
         name=user.name,
-        created_at=user.created_at.isoformat(),
+        created_at=user.createdAt.isoformat(),
     )
